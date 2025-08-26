@@ -1,0 +1,15 @@
+boto3
+duckduckgo_search
+mcp[cli]
+nova-act
+opensearch-py
+pandas
+retrying
+strands-agents 
+strands-agents-tools[mem0_memory]
+streamlit
+tavily-python
+tqdm
+uv
+strands-agents[litellm]
+python-dotenv

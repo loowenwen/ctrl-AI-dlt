@@ -1,31 +1,8 @@
-"""
-aws.py
-Simple script to test AWS connection using boto3 and a specific profile.
-Works with virtual environment.
-"""
+# To get AWS credentials for a specific profile, you can use the AWS CLI command
+aws sts get-caller-identity --profile myisb01_IsbUsersPS-371061166839
 
-import boto3
-import sys
+# Make sure to set the AWS_PROFILE environment variable in your shell
+export AWS_PROFILE=myisb01_IsbUsersPS-371061166839
 
-def main():
-    # Set AWS profile name
-    profile_name = "371061166839_myisb01_IsbUsersPS"
-
-    try:
-        # Start a session with the profile
-        session = boto3.Session(profile_name=profile_name)
-        
-        # Use STS to verify credentials
-        sts_client = session.client("sts")
-        identity = sts_client.get_caller_identity()
-        
-        print("AWS Identity info:")
-        print(identity)
-
-    except Exception as e:
-        print("Error connecting to AWS:")
-        print(e)
-        sys.exit(1)
-
-if __name__ == "__main__":
-    main()
+# Then run the agent script
+python agents/agent.py

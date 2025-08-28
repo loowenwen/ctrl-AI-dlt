@@ -9,7 +9,7 @@ import sys
 
 def main():
     # Set AWS profile name
-    profile_name = "371061166839_myisb01_IsbUsersPS"
+    profile_name = "myisb01_IsbUsersPS-371061166839"
 
     try:
         # Start a session with the profile
@@ -29,3 +29,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

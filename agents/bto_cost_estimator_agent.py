@@ -1,9 +1,3 @@
-"""
-This agent estimates BTO prices based on historical launches.
-Inputs: estate name, unit type
-Outputs: estimated price range, median, notes
-"""
-
 import pandas as pd
 import numpy as np
 

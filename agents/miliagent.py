@@ -3,7 +3,6 @@ load_dotenv()
 
 import os
 import json
-import boto3
 import requests
 from strands import Agent
 from strands.models import BedrockModel
@@ -16,32 +15,11 @@ def get_auth_token():
     
     auth_url = "https://www.onemap.gov.sg/api/auth/post/getToken"
     response = requests.post(auth_url, json={"email": email, "password": password})
-    
-    auth_url = "https://www.onemap.gov.sg/api/auth/post/getToken"
-    response = requests.post(auth_url, json={"email": email, "password": password})
-    
+
     if response.status_code == 200:
         return response.json()["access_token"]
     else:
         raise Exception(f"Failed to authenticate: {response.status_code}")
-
-
-def get_nearest_mrt_walking_time(lat, lon):
-    token = get_auth_token()
-    url = "https://www.onemap.gov.sg/api/public/nearbysvc/getNearestMrtStops"
-    params = {"latitude": lat, "longitude": lon, "radius_in_meters": 2000}
-    headers = {"Authorization": token}
-    
-    resp = requests.get(url, headers=headers, params=params)
-    data = resp.json()
-    
-    if not data:
-        return None
-    
-    nearest = data[0]
-    walking_time = 5  
-    return {"name": nearest["name"], "road": nearest["road"], "walking_time_min": walking_time}
-
 
 def get_dummy_bto_locations():
     """Return comprehensive dummy BTO location data"""
@@ -63,163 +41,332 @@ def get_dummy_bto_locations():
         {"name": "Sengkang Central", "lat": 1.3950, "lon": 103.8900, "launch_date": "2024", "price_range": "$350k-$550k"}
     ]
 
+def get_route_data(start: str, end: str, time_period: str):
+    """Fetch route data from OneMap API for BTO transport analysis."""
+    # Fixed defaults for BTO analysis
+    date = "03-24-2025"
+    routeType = "pt"
+    mode = "TRANSIT"
+    maxWalkDistance = 1000
+    numItineraries = 3
 
-def get_personalized_destinations():
-    """Interactive function to get personalized destinations based on user profile"""
-    print("\n" + "="*60)
-    print("🎯 PERSONALIZED DESTINATION RECOMMENDATION")
-    print("="*60)
-    
-    #Ask the user some questions
-    print("\nLet me understand your lifestyle to recommend the best destinations:")
-    
-    #Work-related
-    work_sector = input("What industry do you work in? (e.g., Finance, Tech, Healthcare, Education): ").strip()
-    work_preference = input("Do you prefer working in CBD or industrial areas? (CBD/Industrial/Both): ").strip()
-    
-    #lifestyle
-    age_group = input("What's your age group? (20s/30s/40s/50s+): ").strip()
-    family_status = input("Are you single, married, or have children? (Single/Married/With Kids): ").strip()
-    
-    #transportation preference
-    transport_mode = input("How do you prefer to commute? (MRT/Bus/Car/Bicycle): ").strip()
-    
-    #get the AI to generate personalised destination list
-    prompt = f"""
-    Based on this user profile, recommend 5-7 personalized destinations in Singapore:
-    - Industry: {work_sector}
-    - Work preference: {work_preference}
-    - Age group: {age_group}
-    - Family status: {family_status}
-    - Transport mode: {transport_mode}
-    
-    Consider:
-    1. Work opportunities in their industry
-    2. Lifestyle amenities suitable for their age/family status
-    3. Transportation accessibility
-    4. Popular areas for their demographic
-    
-    Return only a JSON array of destination names, no explanations or markdown formatting.
-    """
-    
-    destinations = call_bedrock(prompt)
-    
-    # Try to parse JSON, fallback to hardcoded if parsing fails
-    try:
-        import re
-        # First try to extract JSON from markdown code blocks
-        json_match = re.search(r'```(?:json)?\s*(\[.*?\])\s*```', destinations, re.DOTALL)
-        if json_match:
-            destinations_list = json.loads(json_match.group(1))
+    # Map human-readable time period → representative time
+    time_periods = {
+        "Morning Peak (6:30-8:30am)": "07:30:00",
+        "Evening Peak (5-7pm)": "18:00:00",
+        "Daytime Off-Peak (8:30am-5pm)": "12:00:00",
+        "Nighttime Off-Peak (7pm-6:30am)": "20:00:00"
+    }
+
+    if time_period not in time_periods:
+        raise ValueError(f"Invalid time_period provided: {time_period}")
+    time = time_periods[time_period]
+
+    # Use your existing auth function
+    token = get_auth_token()
+
+    # Construct request
+    base_url = "https://www.onemap.gov.sg/api/public/routingsvc/route"
+    params = {
+        "start": start,
+        "end": end,
+        "routeType": routeType,
+        "date": date,
+        "time": time,
+        "mode": mode,
+        "maxWalkDistance": maxWalkDistance,
+        "numItineraries": numItineraries
+    }
+    headers = {"Authorization": token}
+
+    response = requests.get(base_url, params=params, headers=headers)
+
+    if response.status_code == 200:
+        data = response.json()
+        if "plan" in data and "itineraries" in data["plan"]:
+            return data["plan"]["itineraries"]
         else:
-            # Try to find just the JSON array
-            json_match = re.search(r'\[.*?\]', destinations, re.DOTALL)
-            if json_match:
-                destinations_list = json.loads(json_match.group())
-            else:
-                # Try direct parsing
-                destinations_list = json.loads(destinations)
+            print("Itineraries not found in the response.")
+            return None
+    else:
+        print(f"Error: {response.status_code}, {response.text}")
+        return None
+
+def search_destination(destination_name: str) -> dict:
+    """Search for destination coordinates using OneMap search API."""
+    token = get_auth_token()
+    url = "https://www.onemap.gov.sg/api/common/elastic/search"
+    
+    params = {
+        "searchVal": destination_name,
+        "returnGeom": "Y",
+        "getAddrDetails": "Y",
+        "pageNum": 1
+    }
+    
+    headers = {"Authorization": token}
+    
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        data = response.json()
         
-        print(f"✅ Successfully parsed AI recommendations: {destinations_list}")
+        if data.get("found") > 0 and data["results"]:
+            result = data["results"][0]  # Get first result
+            return {
+                "lat": float(result["LATITUDE"]),
+                "lon": float(result["LONGITUDE"]),
+                "address": result["ADDRESS"]
+            }
+        
+        return None
         
     except Exception as e:
-        print(f"AI parsing failed: {e}")
-        print("Using fallback destinations...")
-        destinations_list = [
-            "CBD", "Woodlands", "Changi Business Park", "Jurong Industrial Park", 
-            "Changi Airport", "One-North", "Marina Bay", "Sentosa"
-        ]
+        print(f"Destination search error: {e}")
+        return None
+
+def get_transport_data_for_bto(bto_lat: float, bto_lon: float, destination_name: str, time_period: str) -> dict:
+    """Get comprehensive transport data for a BTO location."""
+    # Search for destination coordinates
+    destination_coords = search_destination(destination_name)
+    if not destination_coords:
+        return {"error": "Destination not found"}
     
-    return destinations_list
+    # Get route data
+    start_coords = f"{bto_lat},{bto_lon}"
+    end_coords = f"{destination_coords['lat']},{destination_coords['lon']}"
+    
+    routes = get_route_data(start_coords, end_coords, time_period)
+    if not routes:
+        return {"error": "No routes found"}
+    
+    return {
+        "bto_coordinates": {"lat": bto_lat, "lon": bto_lon},
+        "destination": destination_coords,
+        "time_period": time_period,
+        "routes": routes
+    }
 
+def format_route_data_for_ai(transport_data: dict) -> dict:
+    """Format complex route data into AI-friendly structure."""
+    if "error" in transport_data:
+        return transport_data
+    
+    formatted_routes = []
+    
+    for i, route in enumerate(transport_data["routes"]):
+        # Convert seconds to minutes for readability
+        duration_min = round(route["duration"] / 60, 1)
+        walk_time_min = round(route["walkTime"] / 60, 1)
+        transit_time_min = round(route["transitTime"] / 60, 1)
+        waiting_time_min = round(route.get("waitingTime", 0) / 60, 1)
+        
+        # Extract transport modes and routes
+        transport_modes = []
+        route_numbers = []
+        
+        for leg in route["legs"]:
+            if leg["mode"] != "WALK":
+                transport_modes.append(leg["mode"])
+                if leg.get("route"):
+                    route_numbers.append(leg["route"])
+        
+        formatted_route = {
+            "route_number": i + 1,
+            "total_duration_minutes": duration_min,
+            "walking_time_minutes": walk_time_min,
+            "transit_time_minutes": transit_time_min,
+            "waiting_time_minutes": waiting_time_min,
+            "transfers": route["transfers"],
+            "walk_distance_meters": route["walkDistance"],
+            "fare": route.get("fare", "N/A"),
+            "transport_modes": list(set(transport_modes)),
+            "route_numbers": list(set(route_numbers)),
+            "first_transport_mode": transport_modes[0] if transport_modes else "WALK"
+        }
+        
+        formatted_routes.append(formatted_route)
+    
+    return {
+        "bto_location": transport_data["bto_coordinates"],
+        "destination": transport_data["destination"],
+        "time_period": transport_data["time_period"],
+        "available_routes": formatted_routes,
+        "best_route": min(formatted_routes, key=lambda x: x["total_duration_minutes"])
+    }
 
-def call_bedrock(prompt):
-    """Use Strands BedrockModel for AI responses"""
+def create_transport_analysis_agent() -> Agent:
+    """Create the AI agent for transport analysis."""
     bedrock_model = BedrockModel(
         model_id="amazon.nova-lite-v1:0",
         temperature=0.7,
         region_name="us-east-1"
     )
     
-    agent = Agent(model=bedrock_model, system_prompt="You are a helpful assistant that provides clear, concise responses.")
+    system_prompt = """You are a Singapore transport analyst specializing in BTO location evaluation. 
+
+Your expertise includes:
+- Analyzing public transport accessibility
+- Evaluating journey efficiency and complexity
+- Ranking locations by transport convenience
+- Providing actionable insights for homebuyers
+
+When analyzing transport data, consider:
+1. Total journey time (lower is better)
+2. Walking accessibility (shorter walks preferred)
+3. Transfer complexity (fewer transfers preferred)
+4. Transport mode variety (more options preferred)
+5. Time period impact (peak vs off-peak performance)
+
+Provide clear, logical rankings with specific explanations for each BTO location."""
+
+    return Agent(model=bedrock_model, system_prompt=system_prompt)
+
+def select_bto_locations(bto_locations: list) -> list:
+    """Let user select which BTOs to analyze."""
+    print("\n🏘️ Available BTO Locations:")
+    print("-" * 60)
     
-    try:
-        response = agent(prompt)
-        return response
-    except Exception as e:
-        print(f"Error calling Bedrock: {e}")
-        return f"Error: {str(e)}"
+    for i, bto in enumerate(bto_locations, 1):
+        print(f"{i:2d}. {bto['name']:<20} | {bto['price_range']:<15} | Launch: {bto['launch_date']}")
+    
+    print(f"\n�� Select up to 3 BTO locations to analyze (enter numbers separated by commas):")
+    print("💡 Tip: Choose locations that interest you based on price, area, or launch date")
+    
+    while True:
+        try:
+            user_input = input("Enter BTO numbers (e.g., 1,3,5): ").strip()
+            
+            # Parse comma-separated numbers
+            selected_indices = [int(x.strip()) - 1 for x in user_input.split(',')]
+            
+            # Validate selections
+            if len(selected_indices) > 3:
+                print("❌ Please select maximum 3 BTOs")
+                continue
+                
+            if any(idx < 0 or idx >= len(bto_locations) for idx in selected_indices):
+                print("❌ Invalid BTO number. Please check your selection.")
+                continue
+            
+            # Get selected BTOs
+            selected_bto_locations = [bto_locations[idx] for idx in selected_indices]
+            
+            print(f"\n✅ Selected BTOs for analysis:")
+            for i, bto in enumerate(selected_bto_locations, 1):
+                print(f"  {i}. {bto['name']} - {bto['price_range']}")
+            
+            return selected_bto_locations
+            
+        except ValueError:
+            print("❌ Please enter valid numbers separated by commas")
+        except Exception as e:
+            print(f"❌ Error: {e}")
 
 
-def agentic_bto_ranking(choice_index, bto_locations, destinations):
-    """Enhanced BTO ranking with more detailed analysis"""
-    choice = destinations[choice_index - 1]
+
+##Creating the transport analysis agent
+def create_transport_analysis_agent() -> Agent:
+    """Create the AI agent for transport-only analysis."""
+    bedrock_model = BedrockModel(
+        model_id="amazon.nova-lite-v1:0",
+        temperature=0.7,
+        region_name="us-east-1"
+    )
     
-    print(f"\n🔍 Analyzing BTO locations for commuting to {choice}...")
+    system_prompt = """You are a Singapore public transport specialist focusing ONLY on transport accessibility.
+
+Your expertise is LIMITED to:
+- Public transport journey times
+- Walking distances to transport nodes
+- Transfer complexity and frequency
+- Transport mode availability and variety
+- Peak vs off-peak transport performance
+
+DO NOT consider:
+- Price, affordability, or value
+- Neighborhood amenities or lifestyle
+- School quality or family factors
+- Future development potential
+- Any non-transport factors
+
+Provide clear transport rankings based purely on public transport efficiency and accessibility."""
+
+    return Agent(model=bedrock_model, system_prompt=system_prompt)
+
+def analyze_bto_transport(agent: Agent, selected_bto_locations: list, destination_name: str, time_period: str) -> str:
+    """Use AI agent to analyze ONLY transport accessibility for selected BTOs."""
     
-    bto_scores = []
-    for bto in bto_locations:
-        mrt_info = get_nearest_mrt_walking_time(bto["lat"], bto["lon"])
-        walking_time = mrt_info["walking_time_min"] if mrt_info else 999
+    #getting the route data 
+    all_transport_data = []
+    
+    for bto in selected_bto_locations:
+        print(f"🔍 Analyzing transport for {bto['name']}...")
         
-    
-        accessibility_score = max(0, 100 - (walking_time * 10))  # Higher score for shorter walking time
+        transport_data = get_transport_data_for_bto(
+            bto["lat"], bto["lon"], destination_name, time_period
+        )
         
-        bto_scores.append({
-            "name": bto["name"], 
-            "walking_time": walking_time,
-            "accessibility_score": accessibility_score,
-            "price_range": bto["price_range"],
-            "launch_date": bto["launch_date"]
-        })
+        if "error" not in transport_data:
+            formatted_data = format_route_data_for_ai(transport_data)
+            formatted_data["bto_name"] = bto["name"]
+            # Remove price range since we're not considering it
+            all_transport_data.append(formatted_data)
+        else:
+            print(f"❌ Error getting data for {bto['name']}: {transport_data['error']}")
     
-    # Enhanced prompt for better analysis
-    prompt = f"""
-    Analyze and rank these BTO locations for commuting to {choice}:
-    
-    BTO Locations with details:
-    {json.dumps(bto_scores, indent=2)}
-    
-    Provide:
-    1. A ranked list (1st, 2nd, 3rd...) with scores out of 100
-    2. Brief explanation for each ranking considering:
-       - Walking time to MRT/bus stops
-       - Accessibility score
-       - Price range affordability
-       - Launch date (newer projects might be preferred)
-    3. Overall recommendation for the best location
-    4. Consider walking time, accessibility, and commute convenience
-    
-    Format your response clearly with rankings and explanations.
+    if not all_transport_data:
+        return "No transport data available for the selected BTOs."
+
+    #prompt for transport analysis
+    analysis_prompt = f"""
+    Analyze ONLY the public transport accessibility for these {len(all_transport_data)} BTO locations commuting to {destination_name} during {time_period}.
+
+    Transport Data:
+    {json.dumps(all_transport_data, indent=2)}
+
+    Provide a transport-focused ranking considering ONLY:
+    1. Total journey time (lower is better)
+    2. Walking accessibility to transport nodes
+    3. Transfer complexity and frequency
+    4. Transport mode variety and reliability
+    5. Peak vs off-peak performance differences
+
+    DO NOT consider price, amenities, or any non-transport factors.
+    Focus purely on how easy it is to get from each BTO to the destination using public transport.
+
+    Provide clear rankings with transport-specific explanations.
     """
     
-    llm_output = call_bedrock(prompt)
-    return llm_output
+    try:
+        response = agent(analysis_prompt)
+        return response
+    except Exception as e:
+        return f"AI analysis failed: {str(e)}"
+
+
 
 
 def main():
-    """Main function with enhanced user experience"""
-    print("🏠 BTO LOCATION ANALYZER & RECOMMENDER")
+    """Main function focused on transport-only analysis"""
+    print("🚇 BTO TRANSPORT ACCESSIBILITY ANALYZER")
     print("="*60)
-    
+    print("Focus: Public Transport Analysis Only")
+    print("="*60)
     
     print("\n🏘️ Loading BTO location data...")
     bto_locations = get_dummy_bto_locations()
-    print(f"Loaded {len(bto_locations)} BTO locations:")
-    for i, bto in enumerate(bto_locations[:5], 1):  # Show first 5
-        print(f"  {i}. {bto['name']} - {bto['price_range']}")
-    if len(bto_locations) > 5:
-        print(f"  ... and {len(bto_locations) - 5} more locations")
+    print(f"Loaded {len(bto_locations)} BTO locations")
     
-    #Get personalized destinations
-    destinations = get_personalized_destinations()
+    # Simple destination list
+    destinations = [
+        "CBD", "Woodlands", "Changi Business Park", "Jurong Industrial Park", 
+        "Changi Airport", "One-North", "Marina Bay", "Sentosa"
+    ]
     
-    
-    print(f"\n🎯 Based on your profile, here are recommended destinations:")
+    print(f"\n🎯 Available destinations:")
     for i, dest in enumerate(destinations, 1):
         print(f"{i}. {dest}")
     
-
     while True:
         try:
             choice = int(input(f"\nEnter destination number (1-{len(destinations)}): "))
@@ -230,15 +377,50 @@ def main():
         except ValueError:
             print("Please enter a valid number")
     
+    # Get time period for transport analysis
+    print("\n⏰ Choose your typical commute time:")
+    time_periods = [
+        "Morning Peak (6:30-8:30am)",
+        "Evening Peak (5-7pm)", 
+        "Daytime Off-Peak (8:30am-5pm)",
+        "Nighttime Off-Peak (7pm-6:30am)"
+    ]
     
-    print("\n🤖 Generating AI-powered BTO analysis...")
-    result = agentic_bto_ranking(choice, bto_locations, destinations)
+    for i, period in enumerate(time_periods, 1):
+        print(f"{i}. {period}")
+    
+    while True:
+        try:
+            time_choice = int(input(f"\nEnter your choice (1-{len(time_periods)}): "))
+            if 1 <= time_choice <= len(time_periods):
+                selected_period = time_periods[time_choice - 1]
+                break
+            else:
+                print(f"Please enter a number between 1 and {len(time_periods)}")
+        except ValueError:
+            print("Please enter a valid number")
+    
+    selected_destination = destinations[choice - 1]
+    
+    # Let user select which BTOs to analyze
+    selected_bto_locations = select_bto_locations(bto_locations)
+    
+    print(f"\n🚇 Analyzing TRANSPORT ACCESSIBILITY for {len(selected_bto_locations)} selected BTOs...")
+    print(f"Destination: {selected_destination}")
+    print(f"Time Period: {selected_period}")
+    print("Focus: Public transport efficiency and accessibility only")
+    
+    # Create AI agent and analyze transport
+    print("\n🤖 AI Transport Specialist is analyzing public transport data...")
+    agent = create_transport_analysis_agent()
+    analysis_result = analyze_bto_transport(agent, selected_bto_locations, selected_destination, selected_period)
     
     print("\n" + "="*60)
-    print("�� BTO RANKINGS & RECOMMENDATIONS")
+    print("PUBLIC TRANSPORT ACCESSIBILITY ANALYSIS RESULTS")
     print("="*60)
-    print(result)
-
+    print("Note: Analysis focuses purely on transport factors")
+    print("="*60)
+    print(analysis_result)
 
 if __name__ == "__main__":
     main()

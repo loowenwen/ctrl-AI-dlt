@@ -5,3 +5,4 @@ python-dotenv
 strands-agents
 googlesearch-python
 yt-dlp
+playwright

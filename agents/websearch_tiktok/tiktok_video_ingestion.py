@@ -7,7 +7,7 @@ Send a local (downloaded) video to Amazon Nova Pro on Bedrock via:
   B) S3 object reference (recommended for >25MB)
 
 Usage:
-  python video_ingestion.py "<tiktok_or_local_path>" --via-s3 
+  python agents/websearch_tiktok/tiktok_video_ingestion.py "<tiktok_or_local_path>" --via-s3 
 """
 
 import os

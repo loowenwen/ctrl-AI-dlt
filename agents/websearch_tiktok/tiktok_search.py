@@ -88,6 +88,6 @@ def find_topic_sources(topic: str, max_results: int = 5) -> dict:
 # CLI for quick testing
 # -------------------------
 if __name__ == "__main__":
-    topic = "HDB BTO Toa Payoh TikTok videos"
+    topic = "HDB BTO Toa Payoh July Launch 2025 TikTok videos regarding location, sentiment, price, etc"
     out = find_topic_sources(topic, max_results=5)
     print(json.dumps(out, indent=2, ensure_ascii=False))

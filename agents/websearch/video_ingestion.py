@@ -272,24 +272,7 @@ def invoke_nova_pro_video_s3(region: str, profile: str, s3_uri: str, prompt: str
     except Exception:
         return json.dumps(result, indent=2)
 
-def invoke_nova_pro_image_inline(region: str, profile: str, image_b64: str, img_format: str, prompt: str) -> str:
-    content_blocks = [{
-        "image": {
-            "format": img_format,  # "jpeg" | "png" | "webp"
-            "source": { "bytes": image_b64 }
-        }
-    }]
-    return _invoke_bedrock_messages_v1(region, profile, content_blocks, prompt)
 
-def invoke_nova_pro_image_s3(region: str, profile: str, s3_uri: str, img_format: str, prompt: str) -> str:
-    s3_loc = {"uri": s3_uri}
-    content_blocks = [{
-        "image": {
-            "format": img_format,
-            "source": { "s3Location": s3_loc }
-        }
-    }]
-    return _invoke_bedrock_messages_v1(region, profile, content_blocks, prompt)
 
 def parse_s3_uri(uri: str) -> tuple[str, str]:
     """Return (bucket, key) from an s3://bucket/key URI."""

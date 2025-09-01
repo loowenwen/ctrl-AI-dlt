@@ -3,3 +3,5 @@ boto3
 pandas
 python-dotenv
 strands-agents
+googlesearch-python
+yt-dlp

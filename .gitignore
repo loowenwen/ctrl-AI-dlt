@@ -3,3 +3,6 @@ Ignite Training Session 2/
 venv/
 __pycache__/
 .DS_Store
+*.zip
+build/
+dist/

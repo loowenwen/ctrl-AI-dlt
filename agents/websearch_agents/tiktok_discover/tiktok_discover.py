@@ -1,30 +1,25 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 """
-Scrape TikTok 'Discover' pages and return ALL available metadata per item.
-
-Usage:
-  pip install playwright
-  playwright install chromium
-  python tiktok_discover.py "https://www.tiktok.com/discover/july-bto-launch-toa-payoh" --limit 60 --ndjson
+Reusable TikTok Discover scraper (Playwright, sync).
+- Exposes scrape_discover() which returns a Python dict (no printing).
+- Safe to import in AWS Lambda (assuming Playwright runtime/layer present).
 """
 
-import argparse
+from __future__ import annotations
 import json
 import time
 from typing import List, Dict, Any, Optional
 
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, Page
 
-UA = ("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-      "AppleWebKit/537.36 (KHTML, like Gecko) "
-      "Chrome/127.0.0.0 Safari/537.36")
-
+UA = (
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) "
+    "Chrome/127.0.0.0 Safari/537.36"
+)
 
 # ------------------------- helpers -------------------------
 
-def _extract_sigi_state(page) -> Optional[Dict[str, Any]]:
+def _extract_sigi_state(page: Page) -> Optional[Dict[str, Any]]:
     try:
         data = page.evaluate("() => window.SIGI_STATE || null")
         if data:
@@ -70,7 +65,7 @@ def _items_from_sigi(sigi: Dict[str, Any]) -> Dict[str, Any]:
     # Sparse shells (no metadata yet); DOM enrich later
     return {vid: {"id": vid} for vid in candidate_ids}
 
-def _scroll_to_load(page, target_count: int, max_rounds: int = 24, sleep_s: float = 0.6):
+def _scroll_to_load(page: Page, target_count: int, max_rounds: int = 24, sleep_s: float = 0.6):
     last_height = 0
     for _ in range(max_rounds):
         page.mouse.wheel(0, 6000)
@@ -83,7 +78,7 @@ def _scroll_to_load(page, target_count: int, max_rounds: int = 24, sleep_s: floa
             break
         last_height = h
 
-def _dom_cards(page):
+def _dom_cards(page: Page):
     sels = [
         'div[data-e2e*="search_card"]',
         'div[data-e2e*="search-card"]',
@@ -188,10 +183,23 @@ def _merge_item(vid: str, sigi_item: Optional[Dict[str, Any]], dom: Optional[Dic
         out["url"] = f"https://www.tiktok.com/@{author}/video/{vid}" if author else f"https://www.tiktok.com/video/{vid}"
     return out
 
+# ------------------------- public API -------------------------
 
-# ------------------------- main scrape -------------------------
-
-def scrape_discover(url: str, limit: int = 50, timeout_s: int = 30, include_page: bool = False, ndjson: bool = False):
+def scrape_discover(
+    url: str,
+    *,
+    limit: int = 50,
+    timeout_s: int = 30,
+    include_page: bool = False
+) -> Dict[str, Any]:
+    """
+    Core scraper. Returns a dict:
+      {
+        "items": [ { "id": "...", "url": "...", "sigi_item": {...}, "dom": {...} }, ... ],
+        "page": { "sigi_state": {...} }   # only if include_page=True
+      }
+    Raises exceptions to the caller (so Lambda handler / CLI can decide).
+    """
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         context = browser.new_context(user_agent=UA, viewport={"width": 1366, "height": 900})
@@ -229,10 +237,10 @@ def scrape_discover(url: str, limit: int = 50, timeout_s: int = 30, include_page
             results.append(_merge_item(vid, items_by_id.get(vid), dom_by_id.get(vid)))
 
         # Order: prefer DOM order for nicer UX
-        ordered = []
+        ordered: List[Dict[str, Any]] = []
         for card in _dom_cards(page):
             href = _href_or_none(card, 'a[href*="/video/"]')
-            if not href: 
+            if not href:
                 continue
             vid = href.rsplit("/video/", 1)[-1]
             for i, r in enumerate(results):
@@ -240,36 +248,12 @@ def scrape_discover(url: str, limit: int = 50, timeout_s: int = 30, include_page
                     ordered.append(r)
                     results.pop(i)
                     break
-        ordered.extend(results)  # append any leftovers
+        ordered.extend(results)  # leftovers
         ordered = ordered[:limit]
 
-        page_blob = sigi if include_page else None
+        payload: Dict[str, Any] = {"items": ordered}
+        if include_page:
+            payload["page"] = {"sigi_state": sigi}
 
         browser.close()
-
-        if ndjson:
-            for rec in ordered:
-                print(json.dumps(rec, ensure_ascii=False))
-            return None
-        else:
-            payload: Dict[str, Any] = {"items": ordered}
-            if page_blob is not None:
-                payload["page"] = {"sigi_state": page_blob}
-            print(json.dumps(payload, indent=2, ensure_ascii=False))
-            return payload
-
-
-# ------------------------- cli -------------------------
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("url")
-    ap.add_argument("--limit", type=int, default=50, help="Max items to return")
-    ap.add_argument("--include-page", action="store_true", help="Include entire SIGI_STATE under payload.page.sigi_state")
-    ap.add_argument("--ndjson", action="store_true", help="Emit one JSON object per line (items only)")
-    args = ap.parse_args()
-
-    scrape_discover(args.url, limit=args.limit, include_page=args.include_page, ndjson=args.ndjson)
-
-if __name__ == "__main__":
-    main()
+        return payload

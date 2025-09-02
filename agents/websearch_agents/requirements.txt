@@ -1,0 +1,9 @@
+botocore
+boto3
+pandas
+python-dotenv
+strands-agents
+googlesearch-python
+yt-dlp
+playwright==1.54.0
+numpy<=2.2.6

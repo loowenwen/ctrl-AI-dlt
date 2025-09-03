@@ -30,17 +30,17 @@ def normalise_coordinates_payload(data: Any) -> List[Dict[str, Any]]:
                 desc = {}
             town = (desc or {}).get("town") or props.get("town") or (desc or {}).get("projectName")
             launch_date = (desc or {}).get("launchStartDate") or props.get("launchStartDate") or ""
-            launch_year = str(launch_date).split("-")[0] if launch_date else ""
             if not town:
-                #keep output clean so skip other stuff
                 continue
-            items.append({
+            bto_info = {
                 "name": town,
                 "lat": round(float(lat), 6),
                 "lon": round(float(lon), 6),
-                "launch_date": launch_year,
-                "price_range": "$unknown",
-            })
+                "launch_date": launch_date,
+            }
+            bto_info.update(desc)
+            bto_info.update(props)
+            items.append(bto_info)
         except Exception:
             continue
     return items
@@ -137,10 +137,16 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
         await asyncio.sleep(1)
         await browser.close()
 
-
     results = dedupe_and_sort(results)
     if by_name:
         results = unique_by_name(results)
+
+    # Save to bto_data.json
+    json_output_path = "bto_data.json"
+    with open(json_output_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+    if verbose or pretty:
+        print(f"Saved {len(results)} BTO records to {json_output_path}")
 
     if coords_only:
         coords = extract_coords_only(results)
@@ -159,14 +165,17 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
         return
 
     if csv_path:
-        fieldnames = ["name", "lat", "lon", "launch_date", "price_range"]
-        with open(csv_path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames)
-            writer.writeheader()
-            for row in results:
-                writer.writerow({k: row.get(k, "") for k in fieldnames})
-        if verbose or pretty:
-            print(f"Wrote {len(results)} rows to {csv_path}")
+        if results:
+            fieldnames = sorted(set(k for item in results for k in item.keys()))
+            with open(csv_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.DictWriter(f, fieldnames=fieldnames)
+                writer.writeheader()
+                for row in results:
+                    writer.writerow(row)
+            if verbose or pretty:
+                print(f"Wrote {len(results)} rows to {csv_path}")
+        else:
+            print("No results to write.")
     else:
         if pretty:
             print(json.dumps(results, indent=2, ensure_ascii=False))

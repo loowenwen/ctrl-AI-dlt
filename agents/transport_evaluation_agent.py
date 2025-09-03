@@ -7,6 +7,7 @@ import requests
 from strands import Agent
 from strands.models import BedrockModel
 
+
 def get_auth_token():
     email = os.getenv("ONEMAP_EMAIL")
     password = os.getenv("ONEMAP_PASSWORD")
@@ -21,6 +22,7 @@ def get_auth_token():
     else:
         raise Exception(f"Failed to authenticate: {response.status_code}")
 
+#load bto locations 
 def load_bto_locations(json_file_path="bto_data.json"):
     """Load BTO location data from a JSON file."""
     try:
@@ -55,6 +57,7 @@ def load_bto_locations(json_file_path="bto_data.json"):
     except Exception as e:
         print(f"Error loading BTO locations: {e}")
         raise
+
 
 def get_route_data(start: str, end: str, time_period: str):
     """Fetch route data from OneMap API for BTO transport analysis."""
@@ -101,6 +104,7 @@ def get_route_data(start: str, end: str, time_period: str):
     else:
         print(f"Error: {response.status_code}, {response.text}")
         return None
+
 
 def search_destination(destination_name: str) -> dict:
     """Search for destination coordinates using OneMap search API."""

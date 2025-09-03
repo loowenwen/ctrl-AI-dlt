@@ -54,7 +54,7 @@ from typing import Any, Dict, Optional
 from dotenv import load_dotenv
 load_dotenv()
 #comment above out before zip to lambda
-from video_ingestion import (
+from video_ingestion_functions import (
     is_url, download_web_video, ensure_h264_aac, maybe_trim_video, file_to_base64,
     extract_audio_m4a, transcribe_with_groq, upload_to_s3, delete_s3_object,
     nova_with_text, nova_with_video_inline, nova_with_video_s3, DEFAULT_PROMPT
@@ -122,49 +122,67 @@ def lambda_handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
-# ---------------- Local CLI ----------------
-
-def _cli() -> int:
-    ap = argparse.ArgumentParser(description="Nova Pro video Lambda/Local runner")
-    ap.add_argument("--mode", choices=["transcribe_to_text", "raw_video_inline", "raw_video_s3"],
-                    default="transcribe_to_text")
-    ap.add_argument("--input", required=True, help="YouTube/TikTok URL or local video path")
-    ap.add_argument("--prompt", default=DEFAULT_PROMPT)
-    ap.add_argument("--region", default=os.environ.get("AWS_REGION", "us-east-1"))
-    ap.add_argument("--profile", default=os.environ.get("AWS_PROFILE"))
-    ap.add_argument("--no-trim", action="store_true", help="Skip trimming (inline mode)")
-    ap.add_argument("--bucket", help="Target bucket for S3 mode (or env NOVA_BUCKET)")
-    ap.add_argument("--prefix", default="nova_inputs/", help="Key prefix for S3 mode")
-    ap.add_argument("--delete-after", action="store_true", default=True, help="Delete S3 object post-invoke")
-    ap.add_argument("--return-transcript", action="store_true", help="Include transcript in output")
-    ap.add_argument("--groq-api-key", help="Override GROQ_API_KEY env")
-    args = ap.parse_args()
-
+def process_video(
+    input_path: str,
+    mode: str = "transcribe_to_text",
+    prompt: str = DEFAULT_PROMPT,
+    region: str = os.environ.get("AWS_REGION", "us-east-1"),
+    profile: Optional[str] = os.environ.get("AWS_PROFILE"),
+    no_trim: bool = False,
+    bucket: Optional[str] = None,
+    prefix: str = "nova_inputs/",
+    delete_after: bool = True,
+    return_transcript: bool = False,
+    groq_api_key: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    Process video through Nova Pro with specified parameters.
+    
+    Args:
+        input_path: YouTube/TikTok URL or local video path
+        mode: Processing mode ('transcribe_to_text', 'raw_video_inline', 'raw_video_s3')
+        prompt: Custom instruction for processing
+        region: AWS region
+        profile: AWS profile name
+        no_trim: Skip trimming in inline mode
+        bucket: Target bucket for S3 mode
+        prefix: Key prefix for S3 mode
+        delete_after: Delete S3 object after processing
+        return_transcript: Include transcript in output
+        groq_api_key: Override GROQ_API_KEY env
+    
+    Returns:
+        Dict containing processing results
+    """
     event: Dict[str, Any] = {
-        "mode": args.mode,
-        "input": args.input,
-        "prompt": args.prompt,
-        "region": args.region,
-        "profile": args.profile,
-        "return_transcript": args.return_transcript,
+        "mode": mode,
+        "input": input_path,
+        "prompt": prompt,
+        "region": region,
+        "profile": profile,
+        "return_transcript": return_transcript,
     }
-    if args.mode == "raw_video_inline":
-        event["no_trim"] = args.no_trim
-    elif args.mode == "raw_video_s3":
-        if args.bucket:
-            event["bucket"] = args.bucket
-        if args.prefix:
-            event["prefix"] = args.prefix
-        event["delete_after"] = args.delete_after
+
+    if mode == "raw_video_inline":
+        event["no_trim"] = no_trim
+    elif mode == "raw_video_s3":
+        if bucket:
+            event["bucket"] = bucket
+        if prefix:
+            event["prefix"] = prefix
+        event["delete_after"] = delete_after
     else:  # transcribe_to_text
-        if args.groq_api_key:
-            event["groq_api_key"] = args.groq_api_key
+        if groq_api_key:
+            event["groq_api_key"] = groq_api_key
 
-    resp = lambda_handler(event, None)
-    print(json.dumps(resp, indent=2, ensure_ascii=False))
-    return 0 if resp.get("ok") else 1
+    return lambda_handler(event, None)
 
+# Example usage:
 if __name__ == "__main__":
-    sys.exit(_cli())
-
-# python3 video_ingestion_lambda.py --input "https://www.tiktok.com/@propertyfunfacts/video/7408904554282028295"
+    # Example: Process a TikTok video
+    result = process_video(
+        input_path="https://www.tiktok.com/@propertyfunfacts/video/7408904554282028295",
+        mode="transcribe_to_text",
+        return_transcript=True
+    )
+    print(json.dumps(result, indent=2, ensure_ascii=False))

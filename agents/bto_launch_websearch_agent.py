@@ -32,7 +32,7 @@ def normalise_coordinates_payload(data: Any) -> List[Dict[str, Any]]:
             launch_date = (desc or {}).get("launchStartDate") or props.get("launchStartDate") or ""
             launch_year = str(launch_date).split("-")[0] if launch_date else ""
             if not town:
-                # Skip nameless points to keep output clean
+                #keep output clean so skip other stuff
                 continue
             items.append({
                 "name": town,
@@ -137,7 +137,7 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
         await asyncio.sleep(1)
         await browser.close()
 
-    # Clean output
+
     results = dedupe_and_sort(results)
     if by_name:
         results = unique_by_name(results)

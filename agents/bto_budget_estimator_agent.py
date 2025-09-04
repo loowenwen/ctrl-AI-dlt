@@ -40,7 +40,7 @@ def estimate_hdb_loan(household_income: int, annual_rate: float = 0.03, years: i
     return round(L, 2)
 
 WS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "us-west-2")
-BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "openai.gpt-oss-120b-1:0")
+BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20240620")
 
 session = boto3.Session()
 

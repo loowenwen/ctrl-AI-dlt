@@ -17,7 +17,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN")  
 
 AWS_REGION = "us-east-1"
-BEDROCK_MODEL_ID = "arn:aws:bedrock:us-ast-1:371061166839:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+BEDROCK_MODEL_ID = "arn:aws:bedrock:us-east-1:371061166839:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 
 
 # -------------------------------
@@ -120,40 +120,56 @@ loan_agent = Agent(
 )
 
 # -------------------------------
-# demo / test Run
+# demo / test run
 # -------------------------------
+
 def main():
-    test_cases = [
-        {
-            "household_income": 9000,
-            "cash_savings": 20000,
-            "cpf_savings": 50000,
-            "bto_price": 350000,
-        },
-        {
-            "household_income": 7000,
-            "cash_savings": 10000,
-            "cpf_savings": 30000,
-            "bto_price": 400000,
-        },
-        {
-            "household_income": 12000,
-            "cash_savings": 50000,
-            "cpf_savings": 80000,
-            "bto_price": 450000,
-        },
-    ]
-    
-    for case in test_cases:
+    print("Welcome to the HDB Loan & Budget Estimator!\n")
+
+    # ask user for input
+    household_income = int(input("Enter your monthly household income: "))
+    cash_savings = float(input("Enter your cash savings: "))
+    cpf_savings = float(input("Enter your CPF savings: "))
+    bto_price = float(input("Enter the BTO price you are considering: "))
+
+    # create prompt for agent
+    prompt = (
+        f"My household income is {household_income}, "
+        f"cash savings ${cash_savings}, CPF ${cpf_savings}, "
+        f"interested in a BTO costing ${bto_price}. "
+        f"Please estimate my HDB loan and affordability."
+    )
+
+    # call the agent
+    print("\nCalculating...\n")
+    response = loan_agent(prompt)
+
+    # optionally, keep demoing more queries
+    while True:
+        cont = input("\nDo you want to try another scenario? (y/n): ").strip().lower()
+        if cont != "y":
+            break
+
+        household_income = int(input("Enter your monthly household income: "))
+        cash_savings = float(input("Enter your cash savings: "))
+        cpf_savings = float(input("Enter your CPF savings: "))
+        bto_price = float(input("Enter the BTO price you are considering: "))
+
         prompt = (
-            f"My household income is {case['household_income']}, "
-            f"cash savings ${case['cash_savings']}, CPF ${case['cpf_savings']}, "
-            f"interested in a BTO costing ${case['bto_price']}. "
+            f"My household income is {household_income}, "
+            f"cash savings ${cash_savings}, CPF ${cpf_savings}, "
+            f"interested in a BTO costing ${bto_price}. "
             f"Please estimate my HDB loan and affordability."
         )
-        print(f"**Prompt:** {prompt}\n")
+
+        print("\nCalculating...\n")
         response = loan_agent(prompt)
-        print("\n" + "-"*80 + "\n")
 
 if __name__ == "__main__":
     main()
+
+test_cases = [ 
+    {"household_income": 9000, "cash_savings": 20000, "cpf_savings": 50000, "bto_price": 350000,},
+    {"household_income": 7000, "cash_savings": 10000, "cpf_savings": 30000, "bto_price": 400000,},
+    {"household_income": 12000, "cash_savings": 50000, "cpf_savings": 80000, "bto_price": 450000,},
+    ]

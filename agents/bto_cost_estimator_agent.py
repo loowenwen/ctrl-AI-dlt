@@ -202,7 +202,7 @@ class BTOPricingEstimator:
 
 def _default_csv_path() -> str:
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(root, "BTO_Pricing.csv")
+    return os.path.join(root, "bto_pricing_detail.csv")
 
 
 def run_cli(argv: Optional[Tuple[str, ...]] = None) -> int:

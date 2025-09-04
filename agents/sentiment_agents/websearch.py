@@ -1,55 +1,188 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
-"""
-AWS Lambda entry + local CLI wrapper for web aggregation.
-
-Lambda EVENT (two modes):
-1) Topic search + fetch:
-{
-  "mode": "topic",
-  "topic": "HDB BTO Toa Payoh July Launch 2025 ...",
-  "max_results": 5,
-  "max_response_size": 220000,
-  "per_url_timeout_s": 10,
-  "allow_domains": ["straitstimes.com", "hdb.gov.sg"],
-  "block_domains": ["facebook.com"]
-}
-
-2) Direct URLs:
-{
-  "mode": "urls",
-  "urls": ["https://example.com/a", "https://example.com/b"],
-  "max_response_size": 220000,
-  "per_url_timeout_s": 10
-}
-
-RETURNS:
-{ "ok": true, "data": {...} } or { "ok": false, "error": "..." }
-
-Local CLI examples:
-  python main_lambda.py --topic "HDB BTO Toa Payoh July Launch 2025" --max-results 5
-  python main_lambda.py --urls https://a.com https://b.com --max-response-size 150000
-"""
-
 from __future__ import annotations
-import argparse
 import json
-import sys
-from typing import Any, Dict, List, Optional
-
 import os
+import sys
+import ssl
+import certifi
+import urllib.request
+from typing import List, Dict, Any, Optional
 import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
-try:
-    import boto3  # optional: only needed if saving to S3
-except Exception:  # pragma: no cover
-    boto3 = None
+import boto3
+from bs4 import BeautifulSoup
+from googlesearch import search as google_search  # pip: googlesearch-python
+from strands import Agent, tool
 
-from websearch_functions import find_topic_sources, fetch_urls
+# ---- Config ----
+DEFAULT_MAX_RESPONSE_SIZE = int(os.getenv("MAX_RESPONSE_SIZE", "220000"))
+UA = os.getenv(
+    "USER_AGENT",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+    "AppleWebKit/537.36 (KHTML, like Gecko) Chrome Safari"
+)
+GOOGLE_MAX_RESULTS = int(os.getenv("GOOGLE_MAX_RESULTS", "10"))
 
-# --------------- Helpers: matching & saving ---------------
+# Ensure certs (esp. in Lambda)
+os.environ["SSL_CERT_FILE"] = certifi.where()
+SSL_CTX = ssl.create_default_context(cafile=certifi.where())
+
+
+# ----------------------------- Core fetch -----------------------------
+
+def get_page_content(url: str, timeout_s: int = 10) -> Optional[str]:
+    """
+    Fetch a web page and return cleaned plain text (no script/style).
+    """
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": UA})
+        with urllib.request.urlopen(req, timeout=timeout_s, context=SSL_CTX) as resp:
+            # Respect server encoding if present
+            charset = resp.headers.get_content_charset() or "utf-8"
+            html = resp.read().decode(charset, errors="replace")
+        soup = BeautifulSoup(html, "html.parser")
+
+        for tag in soup(["script", "style", "noscript"]):
+            tag.decompose()
+
+        text = soup.get_text(separator=" ")
+        # Normalize whitespace
+        lines = (line.strip() for line in text.splitlines())
+        chunks = (phrase.strip() for line in lines for phrase in line.split("  "))
+        cleaned = "\n".join(chunk for chunk in chunks if chunk)
+        return cleaned or None
+    except Exception as e:
+        # Don't print in library; return None and let caller decide logging
+        return None
+
+
+def search_google(query: str, max_results: int = 10, sleep_interval: float = 2.0) -> List[str]:
+    """
+    Use python googlesearch to get URLs.
+    """
+    try:
+        return list(google_search(query, num_results=max_results, sleep_interval=sleep_interval))
+    except Exception:
+        return []
+
+
+def find_topic_sources(
+    topic: str,
+    *,
+    max_results: int = 5,
+    max_response_size: int = DEFAULT_MAX_RESPONSE_SIZE,
+    per_url_timeout_s: int = 10,
+    allow_domains: Optional[List[str]] = None,
+    block_domains: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """
+    Find & aggregate content about a topic (e.g. 'HDB BTO Toa Payoh').
+
+    Returns:
+        {
+          "topic": str,
+          "sources": [ { "url": str, "content": str } | { "url": str, "error": str }, ... ],
+          "truncated": bool
+        }
+    """
+    if not topic:
+        return {"error": "No topic provided"}
+
+    urls = search_google(topic, max_results=max_results) or []
+    if not urls:
+        return {"topic": topic, "sources": [], "truncated": False, "warning": "No search results found"}
+
+    def _allowed(u: str) -> bool:
+        if block_domains and any(b in u for b in block_domains):
+            return False
+        if allow_domains:
+            return any(a in u for a in allow_domains)
+        return True
+
+    aggregated_size = 0
+    truncated = False
+    results: List[Dict[str, Any]] = []
+
+    for url in urls:
+        if not _allowed(url):
+            results.append({"url": url, "skipped": "domain filtered"})
+            continue
+
+        content = get_page_content(url, timeout_s=per_url_timeout_s)
+        if not content:
+            results.append({"url": url, "error": "Failed to fetch"})
+            continue
+
+        # Build a block with a header to give the consumer context
+        block = f"URL: {url}\n\n{content}\n\n{'=' * 100}\n\n"
+        block_size = len(block.encode("utf-8", errors="ignore"))
+
+        # If adding this block would exceed the cap, truncate the block to fit.
+        if aggregated_size + block_size > max_response_size:
+            remaining = max_response_size - aggregated_size
+            if remaining > 0:
+                # Truncate on byte boundary
+                truncated_block = block.encode("utf-8", errors="ignore")[:remaining].decode("utf-8", errors="ignore")
+                results.append({
+                    "url": url,
+                    "content": truncated_block,
+                    "warning": "Content truncated due to size cap"
+                })
+                aggregated_size = max_response_size
+            truncated = True
+            break
+
+        aggregated_size += block_size
+        results.append({"url": url, "content": content})
+
+    return {
+        "topic": topic,
+        "sources": results,
+        "truncated": truncated
+    }
+
+
+# ----------------------------- Optional: direct URLs mode -----------------------------
+
+def fetch_urls(
+    urls: List[str],
+    *,
+    max_response_size: int = DEFAULT_MAX_RESPONSE_SIZE,
+    per_url_timeout_s: int = 10,
+) -> Dict[str, Any]:
+    """
+    Fetch a provided list of URLs and return cleaned contents with truncation.
+    """
+    aggregated_size = 0
+    truncated = False
+    results: List[Dict[str, Any]] = []
+
+    for url in urls:
+        content = get_page_content(url, timeout_s=per_url_timeout_s)
+        if not content:
+            results.append({"url": url, "error": "Failed to fetch"})
+            continue
+
+        block = f"URL: {url}\n\n{content}\n\n{'=' * 100}\n\n"
+        block_size = len(block.encode("utf-8", errors="ignore"))
+
+        if aggregated_size + block_size > max_response_size:
+            remaining = max_response_size - aggregated_size
+            if remaining > 0:
+                truncated_block = block.encode("utf-8", errors="ignore")[:remaining].decode("utf-8", errors="ignore")
+                results.append({
+                    "url": url,
+                    "content": truncated_block,
+                    "warning": "Content truncated due to size cap"
+                })
+                aggregated_size = max_response_size
+            truncated = True
+            break
+
+        aggregated_size += block_size
+        results.append({"url": url, "content": content})
+
+    return {"urls": urls, "sources": results, "truncated": truncated}
 
 def _normalize_words(words: Any) -> list[str]:
     if not words:
@@ -128,75 +261,8 @@ def _save_matches_s3(matches: list[Dict[str, Any]], topic: Optional[str], bucket
     s3.put_object(Bucket=bucket, Key=key, Body=lines.encode("utf-8"), ContentType="application/x-ndjson")
     return f"s3://{bucket}/{key}"
 
-# ---------------- Lambda handler ----------------
 
-def lambda_handler(event: Dict[str, Any], context: Any = None) -> Dict[str, Any]:
-    try:
-        if not isinstance(event, dict):
-            raise ValueError("Event must be a JSON object")
-
-        mode = (event.get("mode") or "topic").lower()
-        save_words = _normalize_words(event.get("save_if_contains"))
-        save_bucket = event.get("save_bucket") or os.environ.get("WEBSEARCH_SAVE_BUCKET")
-        save_prefix = event.get("save_prefix") or os.environ.get("WEBSEARCH_SAVE_PREFIX") or "websearch-matches/"
-
-        max_response_size = int(event.get("max_response_size", 220000))
-        per_url_timeout_s = int(event.get("per_url_timeout_s", 10))
-
-        if mode == "urls":
-            urls = event.get("urls") or []
-            if not isinstance(urls, list) or not urls:
-                raise ValueError("In 'urls' mode, provide a non-empty list under 'urls'")
-            data = fetch_urls(
-                urls,
-                max_response_size=max_response_size,
-                per_url_timeout_s=per_url_timeout_s,
-            )
-            saved = None
-            match_count = 0
-            if save_words:
-                matches = _match_records(data, save_words)
-                match_count = len(matches)
-                if matches:
-                    if save_bucket and boto3:
-                        saved = _save_matches_s3(matches, topic=None, bucket=save_bucket, prefix=save_prefix)
-                    else:
-                        # No bucket provided in Lambda mode; just attach matches (truncated) to response
-                        pass
-            return {"ok": True, "data": data, "matches": match_count, **({"saved": saved} if saved else {})}
-
-        # Default: topic mode
-        topic = event.get("topic")
-        if not topic or not isinstance(topic, str):
-            raise ValueError("In 'topic' mode, provide 'topic' (string)")
-
-        max_results = int(event.get("max_results", 5))
-        allow_domains = event.get("allow_domains")
-        block_domains = event.get("block_domains")
-
-        data = find_topic_sources(
-            topic,
-            max_results=max_results,
-            max_response_size=max_response_size,
-            per_url_timeout_s=per_url_timeout_s,
-            allow_domains=allow_domains if isinstance(allow_domains, list) else None,
-            block_domains=block_domains if isinstance(block_domains, list) else None,
-        )
-        saved = None
-        match_count = 0
-        if save_words:
-            matches = _match_records(data, save_words)
-            match_count = len(matches)
-            if matches:
-                if save_bucket and boto3:
-                    saved = _save_matches_s3(matches, topic=topic, bucket=save_bucket, prefix=save_prefix)
-                else:
-                    pass
-        return {"ok": True, "data": data, "matches": match_count, **({"saved": saved} if saved else {})}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
-
-
+@tool
 def process_websearch(
     topic: Optional[str] = None,
     urls: Optional[List[str]] = None,

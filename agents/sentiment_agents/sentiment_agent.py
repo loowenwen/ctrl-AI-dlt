@@ -3,14 +3,14 @@ from typing import Any, Dict, List, Tuple
 import re
 import os
 import json
-try:
-    import boto3
-except Exception:  # pragma: no cover
-    boto3 = None
+import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 from typing import Optional
 from botocore.config import Config
+from strands import Agent, tool
+from strands.handlers.callback_handler import PrintingCallbackHandler
+from strands.models.bedrock import BedrockModel
 
 load_dotenv(".env")
 

@@ -45,7 +45,6 @@ model = BedrockModel(
 
 SYSTEM_PROMPT = """
 If the website or url link you received is a tiktok discovery page (a link that contains 'tiktok' and 'discover' in it), use the tool [process_tiktok_discover] to scrape the website for 10 video urls (insert 10 into limit)
-RETURN ONLY THE OUTPUT OF THE TOOL AND NOTHING ELSE.
 """
 
 UA = (
@@ -332,7 +331,7 @@ def process_tiktok_discover(
             for rec in payload.get("items", []):
                 result["data"].append(json.dumps(rec, ensure_ascii=False))
             return result
-        
+        print({"ok": True, "data": payload})
         return {"ok": True, "data": payload}
 
     except Exception as e:

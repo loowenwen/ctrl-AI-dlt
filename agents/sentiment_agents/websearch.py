@@ -12,7 +12,49 @@ from pathlib import Path
 import boto3
 from bs4 import BeautifulSoup
 from googlesearch import search as google_search  # pip: googlesearch-python
+import logging
 from strands import Agent, tool
+from strands.handlers.callback_handler import PrintingCallbackHandler
+from strands.models.bedrock import BedrockModel
+from botocore.config import Config
+from dotenv import load_dotenv
+load_dotenv(".env")
+
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
+
+NOVA_PRO_MODEL_ID = os.environ.get("NOVA_MODEL", "amazon.nova-pro-v1:0")
+WS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+
+# Optional: Use an inference profile if on-demand isn't supported
+INFERENCE_PROFILE_ARN = os.getenv("NOVA_PRO_INFERENCE_PROFILE_ARN") or os.getenv("NOVA_INFERENCE_PROFILE_ARN")
+if INFERENCE_PROFILE_ARN:
+    logger.info("Using Bedrock Inference Profile: %s", INFERENCE_PROFILE_ARN)
+logger.info("Bedrock region=%s model_id=%s", WS_DEFAULT_REGION, NOVA_PRO_MODEL_ID)
+
+session = boto3.Session(region_name=WS_DEFAULT_REGION)
+
+# Some BedrockModel versions accept inference_profile_arn; if not, it will be ignored safely
+model = BedrockModel(
+    model_id=NOVA_PRO_MODEL_ID,
+    max_tokens=1024,
+    boto_client_config=Config(
+        read_timeout=120,
+        connect_timeout=120,
+        retries=dict(max_attempts=3, mode="adaptive"),
+    ),
+    boto_session=session,
+    inference_profile_arn=INFERENCE_PROFILE_ARN if INFERENCE_PROFILE_ARN else None,
+)
+
+SYSTEM_PROMPT = (
+    "Based on your inserted query, determine if we are websearching for a normal google search query or a url. If it is a normal google query, insert the query into 'topic' parameters in [process_websearch] tool." \
+    "Else, insert the url into 'url' parameters in [process_websearch] tool."
+)
 
 # ---- Config ----
 DEFAULT_MAX_RESPONSE_SIZE = int(os.getenv("MAX_RESPONSE_SIZE", "220000"))
@@ -340,18 +382,23 @@ def process_websearch(
                 elif save_path:
                     fp = _save_matches_local(matches, topic=topic, path=save_path)
                     return {"ok": True, "data": payload, "saved": fp, "match_count": len(matches)}
-
+        print(payload)
         return {"ok": True, "data": payload}
 
     except Exception as e:
         return {"ok": False, "error": str(e)}
+    
+
+websearch_agent=Agent(
+    model=model,
+    system_prompt=SYSTEM_PROMPT,
+    tools=[process_websearch],
+    callback_handler=PrintingCallbackHandler(),
+)
 
 # Example usage
 if __name__ == "__main__":
     # Example: Search by topic
-    result = process_websearch(
-        topic="HDB BTO Toa Payoh July 2025 4-room flat reviews, MRT access, school proximity, resale value sentiment on TikTok and YouTube",
-        max_results=5,
-        save_if_contains=["BTO", "launch"]
-    )
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+    result = websearch_agent("HDB BTO Toa Payoh July 2025 4-room flat reviews, MRT access, school proximity, resale value sentiment on TikTok and YouTube")
+    
+    result2=websearch_agent("https://www.tiktok.com/discover/july-bto-launch-toa-payoh")

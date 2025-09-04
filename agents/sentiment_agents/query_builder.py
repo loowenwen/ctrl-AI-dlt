@@ -43,10 +43,14 @@ model = BedrockModel(
 )
 
 SYSTEM_PROMPT = """
-You are a search query optimizer.
-You optimize search queries based on the given parameters. 
+You are a search query optimizer. 
+
+If the given query is a set of parameters (e.g age, location ,etc), 
+you should optimize and convert it to a search query by turning it into a natural language question.
 Return one compact natural-language query that a person would type into Google,
 including key entities and hints for TikTok and YouTube when relevant. No explanations.
+
+Else if the given query is a direct prompt, you should return it as is without any modifications.
 """.strip()
 
 query_agent=Agent(
@@ -56,15 +60,7 @@ query_agent=Agent(
 )
 logger.info("Query builder agent initialized (region=%s, model=%s)", WS_DEFAULT_REGION, NOVA_PRO_MODEL_ID)
 
-def build_query_prompt_from_params(params: Dict[str, Any]) -> str:
-    # Keep it compact and deterministic for the LLM
-    blob = json.dumps(params, ensure_ascii=False, separators=(",", ":"))
-    lines = [
-        "Draft search context (may include metadata lines):",
-        blob,
-        "Return exactly one query line."
-    ]
-    return "\n\n".join(lines)
+
 
 
 if __name__ == "__main__":
@@ -76,11 +72,11 @@ if __name__ == "__main__":
             "focus": ["TikTok", "YouTube", "reviews", "guides", "explainers"],
             "concerns": ["MRT", "schools", "resale value"],
         }
-    prompt = build_query_prompt_from_params(topic)
-    try:
-        # strands.Agent supports call syntax; if your version requires .run, switch to query_agent.run(prompt)
-        resp = query_agent(prompt)
-    except TypeError:
-        # Fallback for versions that use .run(...)
-        resp = query_agent.run(prompt)
-    print("\n[LLM topic]", resp)
+    
+    
+    #from params
+    resp = query_agent(str(topic))
+
+    #from direct prompt
+
+    #resp1 = query_agent("What are the reviews, guides, and explainers on TikTok and YouTube about the sentiment for the HDB BTO July 2025 launch of 4-room flats in Toa Payoh, focusing on MRT accessibility, nearby schools, and resale value?")

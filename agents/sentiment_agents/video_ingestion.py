@@ -50,7 +50,7 @@ model = BedrockModel(
 )
 
 SYSTEM_PROMPT = (
-    "Use the tool [download_video_transcribe] to get the video transcript for the given url, then determine if the sentiment of the videos is more positive or negative in terms of the topic it is talking about. Include as much details as possible."
+    "Use the tool [download_video_transcribe] to get the video transcript for the given url."
 )
 
 def _run(cmd: str):
@@ -165,24 +165,38 @@ def transcribe_with_groq(audio_path: Path, api_key: Optional[str] = None) -> str
     return text or json.dumps(resp, indent=2, default=str)
 
 @tool
-def download_video_transcribe(url: str, out_dir: Path) -> Path:
+def download_video_transcribe(url: str) -> Dict[str, Any]:
     """
-    Download video from URL using yt-dlp and transcribe using openai whisper.
+    Download a video and return a JSON payload with the transcript (and optional sentiment).
+    Returns:
+      {"ok": True, "transcript": "...", "meta": {...}}
+      or {"ok": False, "error": "...", "retryable": false}
     """
-    if is_url(url):
-        print(f"[info] Downloading web video: {url}")
+    try:
+        if not is_url(url):
+            return {"ok": False, "error": "Invalid URL", "retryable": False}
+
         video_path = download_web_video(url)
         audio_path = extract_audio_m4a(video_path)
         transcript = transcribe_with_groq(audio_path, api_key=os.getenv("GROQ_API_KEY"))
-        return transcript
-    else:
-        return ""
+
+        return {
+            "ok": True,
+            "transcript": transcript,
+            "meta": {"video_path": str(video_path), "audio_path": str(audio_path)}
+        }
+    except Exception as e:
+        # If you detect rate limit / 429, set retryable=False so the agent won’t loop
+        msg = str(e)
+        retryable = not any(x in msg for x in ("rate limit", "Rate limit", "429"))
+        return {"ok": False, "error": msg, "retryable": retryable}
 
 transcript_understanding=Agent(
     model=model,
     system_prompt=SYSTEM_PROMPT,
+    tools=[download_video_transcribe],
     callback_handler=PrintingCallbackHandler(),
 )
 
 if __name__ == "__main__":
-    transcript_understanding("https://www.tiktok.com/@9gag/video/7276468614926530566")
+    transcript_understanding("https://www.tiktok.com/@happynesshomessg/video/7539758751616650503")

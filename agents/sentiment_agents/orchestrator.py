@@ -18,9 +18,6 @@ import re
 import concurrent.futures as cf
 import time
 import random
-from strands import Agent, tool
-from strands.handlers.callback_handler import PrintingCallbackHandler
-from strands.models.bedrock import BedrockModel
 
 # ---- import your provided functions ----
 from websearch import process_websearch

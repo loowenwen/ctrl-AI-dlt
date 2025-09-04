@@ -1,0 +1,202 @@
+exercise,project_type,project,waiting_time,flat_type,estimated_floor_area,estimated_internal_floor_area,units,min_price,max_price,exercise_date,avg_price,avg_floor_area
+Feb 2025,standard projects,woodlands north verge,47/48,2-room flexi,40.0,38.0,67,140000,204000,2025-02-01,172000.0,39.0
+Feb 2025,standard projects,woodlands north verge,47/48,2-room flexi,48.0,46.0,268,166000,251000,2025-02-01,208500.0,47.0
+Feb 2025,standard projects,woodlands north verge,47/48,3-room,69.0,66.0,85,275000,363000,2025-02-01,319000.0,67.5
+Feb 2025,standard projects,woodlands north verge,47/48,4-room,94.5,91.5,608,365000,528000,2025-02-01,446500.0,93.0
+Feb 2025,standard projects,woodlands north verge,47/48,5-room,114.5,111.5,535,486000,661000,2025-02-01,573500.0,113.0
+Feb 2025,standard projects,chencharu vines,37,2-room flexi,38.0,36.0,39,108000,135000,2025-02-01,121500.0,37.0
+Feb 2025,standard projects,chencharu vines,37,2-room flexi,48.0,46.0,152,144000,179000,2025-02-01,161500.0,47.0
+Feb 2025,standard projects,chencharu vines,37,3-room,69.0,66.0,90,245000,295000,2025-02-01,270000.0,67.5
+Feb 2025,standard projects,chencharu vines,37,4-room,93.5,90.0,305,316000,380000,2025-02-01,348000.0,91.75
+Feb 2025,standard projects,chencharu vines,37,5-room,113.5,110.0,262,447000,523000,2025-02-01,485000.0,111.75
+Feb 2025,standard projects,chencharu green,38,2-room flexi,38.0,36.0,41,110000,137000,2025-02-01,123500.0,37.0
+Feb 2025,standard projects,chencharu green,38,2-room flexi,48.0,46.0,124,150000,181000,2025-02-01,165500.0,47.0
+Feb 2025,standard projects,chencharu green,38,4-room,94.0,90.0,271,324000,395000,2025-02-01,359500.0,92.0
+Feb 2025,standard projects,chencharu green,38,5-room,114.0,110.0,247,453000,533000,2025-02-01,493000.0,112.0
+Feb 2025,plus project,stirling horizon,55,2-room flexi,40.0,38.0,118,224000,298000,2025-02-01,261000.0,39.0
+Feb 2025,plus project,stirling horizon,55,2-room flexi,48.0,46.0,341,266000,365000,2025-02-01,315500.0,47.0
+Feb 2025,plus project,stirling horizon,55,3-room,66.0,63.0,81,408000,529000,2025-02-01,468500.0,64.5
+Feb 2025,plus project,stirling horizon,55,4-room,89.0,86.0,586,554000,749000,2025-02-01,651500.0,87.5
+Feb 2025,prime project,tanjong rhu parc front,48,2-room flexi,39.0,36.0,58,211000,286000,2025-02-01,248500.0,37.5
+Feb 2025,prime project,tanjong rhu parc front,48,2-room flexi,49.0,46.0,203,275000,364000,2025-02-01,319500.0,47.5
+Feb 2025,prime project,tanjong rhu parc front,48,3-room,66.0,63.0,87,399000,519000,2025-02-01,459000.0,64.5
+Feb 2025,prime project,tanjong rhu parc front,48,4-room,90.0,86.0,464,548000,727000,2025-02-01,637500.0,88.0
+Oct 2024,standard projects,west brickville @ bukit batok,24,2-room flexi,38.0,36.0,39,140000,175000,2024-10-01,157500.0,37.0
+Oct 2024,standard projects,west brickville @ bukit batok,24,2-room flexi,48.0,46.0,91,170000,217000,2024-10-01,193500.0,47.0
+Oct 2024,standard projects,west brickville @ bukit batok,24,3-room,69.0,66.0,91,247000,329000,2024-10-01,288000.0,67.5
+Oct 2024,standard projects,west brickville @ bukit batok,24,4-room,93.0,90.0,260,335000,445000,2024-10-01,390000.0,91.5
+Oct 2024,standard projects,west brickville @ bukit batok,24,5-room,113.0,110.0,169,496000,597000,2024-10-01,546500.0,111.5
+Oct 2024,standard projects,west brickville @ bukit batok,24,3gen,120.0,115.0,39,529000,606000,2024-10-01,567500.0,117.5
+Oct 2024,standard projects,taman jurong skyline,52,2-room flexi,38.0,36.0,156,109000,152000,2024-10-01,130500.0,37.0
+Oct 2024,standard projects,taman jurong skyline,52,2-room flexi,48.0,46.0,390,134000,194000,2024-10-01,164000.0,47.0
+Oct 2024,standard projects,taman jurong skyline,52,3-room,69.0,66.0,117,209000,306000,2024-10-01,257500.0,67.5
+Oct 2024,standard projects,taman jurong skyline,52,4-room,93.0,90.0,610,290000,434000,2024-10-01,362000.0,91.5
+Oct 2024,standard projects,taman jurong skyline,52,5-room,113.0,110.0,493,427000,598000,2024-10-01,512500.0,111.5
+Oct 2024,standard projects,taman jurong skyline,52,3gen,120.0,115.0,78,465000,598000,2024-10-01,531500.0,117.5
+Oct 2024,standard projects,costa riviera i & ii,37/38,2-room flexi,39.0,36.0,36,194000,221000,2024-10-01,207500.0,37.5
+Oct 2024,standard projects,costa riviera i & ii,37/38,2-room flexi,49.0,46.0,106,239000,288000,2024-10-01,263500.0,47.5
+Oct 2024,standard projects,costa riviera i & ii,37/38,3-room,69.0,66.0,86,329000,411000,2024-10-01,370000.0,67.5
+Oct 2024,standard projects,costa riviera i & ii,37/38,4-room,94.0,90.0,394,481000,595000,2024-10-01,538000.0,92.0
+Oct 2024,standard projects,costa riviera i & ii,37/38,5-room,114.0,110.0,110,635000,736000,2024-10-01,685500.0,112.0
+Oct 2024,standard projects,costa riviera i & ii,37/38,3gen,121.0,115.0,35,644000,753000,2024-10-01,698500.0,118.0
+Oct 2024,standard projects,fernvale oasis,33,2-room flexi,38.0,36.0,46,126000,160000,2024-10-01,143000.0,37.0
+Oct 2024,standard projects,fernvale oasis,33,2-room flexi,48.0,46.0,138,162000,205000,2024-10-01,183500.0,47.0
+Oct 2024,standard projects,fernvale oasis,33,4-room,93.0,90.0,345,324000,410000,2024-10-01,367000.0,91.5
+Oct 2024,standard projects,fernvale oasis,33,5-room,113.0,110.0,322,465000,571000,2024-10-01,518000.0,111.5
+Oct 2024,standard projects,fernvale sails,27,2-room flexi,39.0,37.0,22,149000,186000,2024-10-01,167500.0,38.0
+Oct 2024,standard projects,fernvale sails,27,2-room flexi,49.0,47.0,108,175000,240000,2024-10-01,207500.0,48.0
+Oct 2024,standard projects,fernvale sails,27,3-room,69.0,66.0,88,277000,370000,2024-10-01,323500.0,67.5
+Oct 2024,standard projects,fernvale sails,27,4-room,94.0,90.0,218,358000,474000,2024-10-01,416000.0,92.0
+Oct 2024,standard projects,fernvale sails,27,5-room,114.0,110.0,109,524000,640000,2024-10-01,582000.0,112.0
+Oct 2024,standard projects,marsiling ridge,43,4-room,93.0,90.0,162,329000,457000,2024-10-01,393000.0,91.5
+Oct 2024,standard projects,marsiling ridge,43,5-room,113.0,110.0,130,488000,616000,2024-10-01,552000.0,111.5
+Oct 2024,standard projects,central trio @ amk,59,2-room flexi,38.0,36.0,40,187000,227000,2024-10-01,207000.0,37.0
+Oct 2024,standard projects,central trio @ amk,59,2-room flexi,48.0,46.0,115,221000,288000,2024-10-01,254500.0,47.0
+Oct 2024,standard projects,central trio @ amk,59,4-room,89.0,86.0,267,481000,603000,2024-10-01,542000.0,87.5
+Oct 2024,standard projects,bayshore vista,45,2-room flexi,39.0,36.0,58,216000,252000,2024-10-01,234000.0,37.5
+Oct 2024,standard projects,bayshore vista,45,2-room flexi,49.0,46.0,140,259000,340000,2024-10-01,299500.0,47.5
+Oct 2024,standard projects,bayshore vista,45,3-room,66.0,63.0,80,369000,476000,2024-10-01,422500.0,64.5
+Oct 2024,standard projects,bayshore vista,45,4-room,89.0,86.0,456,514000,694000,2024-10-01,604000.0,87.5
+Oct 2024,standard projects,bayshore palms,47,2-room flexi,39.0,36.0,40,199000,253000,2024-10-01,226000.0,37.5
+Oct 2024,standard projects,bayshore palms,47,2-room flexi,49.0,46.0,120,258000,326000,2024-10-01,292000.0,47.5
+Oct 2024,standard projects,bayshore palms,47,4-room,89.0,86.0,550,495000,683000,2024-10-01,589000.0,87.5
+Oct 2024,standard projects,kembangan wave,41,2-room flexi,39.0,36.0,34,190000,230000,2024-10-01,210000.0,37.5
+Oct 2024,standard projects,kembangan wave,41,2-room flexi,48.0,46.0,84,210000,285000,2024-10-01,247500.0,47.0
+Oct 2024,standard projects,kembangan wave,41,4-room,89.0,86.0,230,453000,592000,2024-10-01,522500.0,87.5
+Oct 2024,standard projects,merpati alcove,44,4-room,89.0,86.0,168,530000,647000,2024-10-01,588500.0,87.5
+Oct 2024,standard projects,kallang view,43,3-room,66.0,63.0,68,388000,497000,2024-10-01,442500.0,64.5
+Oct 2024,standard projects,kallang view,43,4-room,89.0,86.0,203,539000,698000,2024-10-01,618500.0,87.5
+Oct 2024,standard projects,towner breeze,48,2-room flexi,39.0,36.0,38,216000,280000,2024-10-01,248000.0,37.5
+Oct 2024,standard projects,towner breeze,48,2-room flexi,48.0,46.0,101,252000,328000,2024-10-01,290000.0,47.0
+Oct 2024,standard projects,towner breeze,48,4-room,90.0,86.0,216,522000,727000,2024-10-01,624500.0,88.0
+Oct 2024,prime project,crawford heights,50,3-room,66.0,63.0,78,390000,523000,2024-10-01,456500.0,64.5
+Oct 2024,prime project,crawford heights,50,4-room,90.0,86.0,234,568000,759000,2024-10-01,663500.0,88.0
+Jun 2024,standard projects,teban breeze,54,2-room flexi,39.0,36.0,75,120000,160000,2024-06-01,140000.0,37.5
+Jun 2024,standard projects,teban breeze,54,2-room flexi,49.0,46.0,222,133000,200000,2024-06-01,166500.0,47.5
+Jun 2024,standard projects,teban breeze,54,3-room,69.0,66.0,111,233000,306000,2024-06-01,269500.0,67.5
+Jun 2024,standard projects,teban breeze,54,4-room,94.0,90.0,444,345000,457000,2024-06-01,401000.0,92.0
+Jun 2024,standard projects,teban breeze,54,5-room,114.0,110.0,234,465000,628000,2024-06-01,546500.0,112.0
+Jun 2024,standard projects,marsiling peak i & ii,35/54,2-room flexi,38.0,36.0,134,94000,152000,2024-06-01,123000.0,37.0
+Jun 2024,standard projects,marsiling peak i & ii,35/54,2-room flexi,48.0,46.0,472,129000,189000,2024-06-01,159000.0,47.0
+Jun 2024,standard projects,marsiling peak i & ii,35/54,3-room,69.0,66.0,181,207000,290000,2024-06-01,248500.0,67.5
+Jun 2024,standard projects,marsiling peak i & ii,35/54,4-room,93.0,90.0,429,304000,423000,2024-06-01,363500.0,91.5
+Jun 2024,standard projects,marsiling peak i & ii,35/54,5-room,113.0,110.0,362,449000,569000,2024-06-01,509000.0,111.5
+Jun 2024,standard projects,marsiling peak i & ii,35/54,3gen,120.0,115.0,31,467000,565000,2024-06-01,516000.0,117.5
+Jun 2024,standard projects,chencharu hills 44/,45,2-room flexi,39.0,36.0,82,113000,138000,2024-06-01,125500.0,37.5
+Jun 2024,standard projects,chencharu hills 44/,45,2-room flexi,48.0,46.0,303,134000,170000,2024-06-01,152000.0,47.0
+Jun 2024,standard projects,chencharu hills 44/,45,3-room,69.0,66.0,82,219000,271000,2024-06-01,245000.0,67.5
+Jun 2024,standard projects,chencharu hills 44/,45,4-room,93.0,90.0,420,279000,346000,2024-06-01,312500.0,91.5
+Jun 2024,standard projects,chencharu hills 44/,45,5-room,114.0,110.0,390,407000,496000,2024-06-01,451500.0,112.0
+Jun 2024,plus project,tampines greentopaz,37,2-room flexi,38.0,36.0,35,152000,187000,2024-06-01,169500.0,37.0
+Jun 2024,plus project,tampines greentopaz,37,2-room flexi,48.0,46.0,138,200000,238000,2024-06-01,219000.0,47.0
+Jun 2024,plus project,tampines greentopaz,37,4-room,93.0,90.0,214,445000,569000,2024-06-01,507000.0,91.5
+Jun 2024,plus project,tampines greentopaz,37,5-room,113.0,110.0,174,589000,719000,2024-06-01,654000.0,111.5
+Jun 2024,prime project,tanjong rhu riverfront i & ii,48/55,2-room flexi,38.0,36.0,130,207000,293000,2024-06-01,250000.0,37.0
+Jun 2024,prime project,tanjong rhu riverfront i & ii,48/55,2-room flexi,48.0,46.0,440,262000,378000,2024-06-01,320000.0,47.0
+Jun 2024,prime project,tanjong rhu riverfront i & ii,48/55,3-room,66.0,63.0,197,402000,544000,2024-06-01,473000.0,64.5
+Jun 2024,prime project,tanjong rhu riverfront i & ii,48/55,4-room,90.5,87.5,1296,568000,779000,2024-06-01,673500.0,89.0
+Jun 2024,prime project,holland vista,57,2-room flexi,38.0,36.0,38,209000,285000,2024-06-01,247000.0,37.0
+Jun 2024,prime project,holland vista,57,2-room flexi,48.0,46.0,76,293000,367000,2024-06-01,330000.0,47.0
+Jun 2024,prime project,holland vista,57,4-room,89.0,86.0,228,582000,762000,2024-06-01,672000.0,87.5
+Feb 2024,standard projects,rail garden @ cck,45,2-room flexi,38.0,36.0,44,102000,124000,2024-02-01,113000.0,37.0
+Feb 2024,standard projects,rail garden @ cck,45,2-room flexi,48.0,46.0,96,128000,155000,2024-02-01,141500.0,47.0
+Feb 2024,standard projects,rail garden @ cck,45,3-room,69.0,66.0,101,202000,253000,2024-02-01,227500.0,67.5
+Feb 2024,standard projects,rail garden @ cck,45,4-room,93.0,90.0,224,300000,376000,2024-02-01,338000.0,91.5
+Feb 2024,standard projects,tanjong tree residences @ hougang,39,2-room flexi,40.0,38.0,36,136000,154000,2024-02-01,145000.0,39.0
+Feb 2024,standard projects,tanjong tree residences @ hougang,39,2-room flexi,48.0,46.0,118,145000,177000,2024-02-01,161000.0,47.0
+Feb 2024,standard projects,tanjong tree residences @ hougang,39,3-room,71.0,68.0,84,247000,294000,2024-02-01,270500.0,69.5
+Feb 2024,standard projects,tanjong tree residences @ hougang,39,4-room,95.0,92.0,122,371000,432000,2024-02-01,401500.0,93.5
+Feb 2024,standard projects,matilda riverside,37,2-room flexi,39.0,36.0,68,131000,177000,2024-02-01,154000.0,37.5
+Feb 2024,standard projects,matilda riverside,37,2-room flexi,48.0,46.0,203,158000,221000,2024-02-01,189500.0,47.0
+Feb 2024,standard projects,matilda riverside,37,3-room,69.0,66.0,112,242000,296000,2024-02-01,269000.0,67.5
+Feb 2024,standard projects,matilda riverside,37,4-room,94.0,90.0,358,318000,429000,2024-02-01,373500.0,92.0
+Feb 2024,standard projects,matilda riverside,37,5-room,114.0,110.0,221,464000,582000,2024-02-01,523000.0,112.0
+Feb 2024,standard projects,woodgrove edge,38/39,2-room flexi,38.0,36.0,89,119000,144000,2024-02-01,131500.0,37.0
+Feb 2024,standard projects,woodgrove edge,38/39,2-room flexi,48.0,46.0,285,137000,184000,2024-02-01,160500.0,47.0
+Feb 2024,standard projects,woodgrove edge,38/39,3-room,69.0,66.0,88,223000,278000,2024-02-01,250500.0,67.5
+Feb 2024,standard projects,woodgrove edge,38/39,4-room,93.0,90.0,341,303000,385000,2024-02-01,344000.0,91.5
+Feb 2024,standard projects,woodgrove edge,38/39,5-room,113.0,110.0,324,412000,515000,2024-02-01,463500.0,111.5
+Feb 2024,plus project,bedok south bloom,40,2-room flexi,38.0,36.0,48,178000,227000,2024-02-01,202500.0,37.0
+Feb 2024,plus project,bedok south bloom,40,2-room flexi,48.0,46.0,144,236000,284000,2024-02-01,260000.0,47.0
+Feb 2024,plus project,bedok south bloom,40,4-room,93.0,90.0,336,491000,638000,2024-02-01,564500.0,91.5
+Feb 2024,plus project,bedok north springs,38,2-room flexi,38.0,36.0,30,155000,203000,2024-02-01,179000.0,37.0
+Feb 2024,plus project,bedok north springs,38,2-room flexi,48.0,46.0,105,209000,256000,2024-02-01,232500.0,47.0
+Feb 2024,plus project,bedok north springs,38,4-room,93.0,90.0,163,451000,568000,2024-02-01,509500.0,91.5
+Feb 2024,plus project,bedok north springs,38,5-room,113.0,110.0,135,605000,730000,2024-02-01,667500.0,111.5
+Feb 2024,prime project,tanglin halt courtyard,58,2-room flexi,38.0,36.0,38,235000,278000,2024-02-01,256500.0,37.0
+Feb 2024,prime project,tanglin halt courtyard,58,2-room flexi,48.0,46.0,38,308000,353000,2024-02-01,330500.0,47.0
+Feb 2024,prime project,tanglin halt courtyard,58,4-room,89.0,86.0,175,565000,720000,2024-02-01,642500.0,87.5
+Dec 2023,standard projects,petir park edge,48,2-room flexi,39.0,37.0,34,110000,145000,2023-12-01,127500.0,38.0
+Dec 2023,standard projects,petir park edge,48,2-room flexi,49.0,47.0,109,144000,190000,2023-12-01,167000.0,48.0
+Dec 2023,standard projects,petir park edge,48,4-room,93.0,90.0,191,320000,426000,2023-12-01,373000.0,91.5
+Dec 2023,standard projects,jurong arcadia,37,2-room flexi,38.0,36.0,32,110000,140000,2023-12-01,125000.0,37.0
+Dec 2023,standard projects,jurong arcadia,37,2-room flexi,48.0,46.0,126,138000,174000,2023-12-01,156000.0,47.0
+Dec 2023,standard projects,jurong arcadia,37,3-room,69.0,66.0,80,207000,277000,2023-12-01,242000.0,67.5
+Dec 2023,standard projects,jurong arcadia,37,4-room,93.0,90.0,304,315000,394000,2023-12-01,354500.0,91.5
+Dec 2023,standard projects,jurong arcadia,37,5-room,113.0,110.0,174,431000,540000,2023-12-01,485500.0,111.5
+Dec 2023,standard projects,woodlands beacon,50,3-room,70.0,67.0,91,268000,340000,2023-12-01,304000.0,68.5
+Dec 2023,standard projects,woodlands beacon,50,4-room,93.0,90.0,308,318000,446000,2023-12-01,382000.0,91.5
+Dec 2023,standard projects,urban rise @ woodlands,51,2-room flexi,40.0,37.0,64,145000,186000,2023-12-01,165500.0,38.5
+Dec 2023,standard projects,urban rise @ woodlands,51,2-room flexi,50.0,48.0,133,174000,231000,2023-12-01,202500.0,49.0
+Dec 2023,standard projects,urban rise @ woodlands,51,3-room,70.0,67.0,85,251000,345000,2023-12-01,298000.0,68.5
+Dec 2023,standard projects,urban rise @ woodlands,51,4-room,94.0,92.0,306,337000,468000,2023-12-01,402500.0,93.0
+Dec 2023,standard projects,urban rise @ woodlands,51,5-room,113.0,110.0,260,468000,612000,2023-12-01,540000.0,111.5
+Dec 2023,plus project,chai chee green,39/43,3-room,69.0,66.0,97,298000,360000,2023-12-01,329000.0,67.5
+Dec 2023,plus project,chai chee green,39/43,4-room,93.0,90.0,627,421000,534000,2023-12-01,477500.0,91.5
+Dec 2023,plus project,chai chee green,39/43,5-room,113.0,110.0,260,569000,725000,2023-12-01,647000.0,111.5
+Dec 2023,plus project,sin ming residences,32,3-room,69.0,66.0,105,374000,473000,2023-12-01,423500.0,67.5
+Dec 2023,plus project,sin ming residences,32,4-room,93.0,90.0,627,519000,665000,2023-12-01,592000.0,91.5
+Dec 2023,prime project,alexandra peaks,59,2-room flexi,38.0,36.0,38,218000,277000,2023-12-01,247500.0,37.0
+Dec 2023,prime project,alexandra peaks,59,2-room flexi,48.0,46.0,15,332000,343000,2023-12-01,337500.0,47.0
+Dec 2023,prime project,alexandra peaks,59,3-room,66.0,63.0,121,380000,512000,2023-12-01,446000.0,64.5
+Dec 2023,prime project,alexandra peaks,59,4-room,89.0,86.0,730,533000,723000,2023-12-01,628000.0,87.5
+Dec 2023,prime project,ulu pandan vista,59,3-room,66.0,63.0,218,430000,541000,2023-12-01,485500.0,64.5
+Dec 2023,prime project,ulu pandan vista,59,4-room,89.0,86.0,672,598000,763000,2023-12-01,680500.0,87.5
+Dec 2023,standard projects,petir park edge,48,2-room flexi,39.0,37.0,34,110000,145000,2023-12-01,127500.0,38.0
+Dec 2023,standard projects,petir park edge,48,2-room flexi,49.0,47.0,109,144000,190000,2023-12-01,167000.0,48.0
+Dec 2023,standard projects,petir park edge,48,4-room,93.0,90.0,191,320000,426000,2023-12-01,373000.0,91.5
+Dec 2023,standard projects,jurong arcadia,37,2-room flexi,38.0,36.0,32,110000,140000,2023-12-01,125000.0,37.0
+Dec 2023,standard projects,jurong arcadia,37,2-room flexi,48.0,46.0,126,138000,174000,2023-12-01,156000.0,47.0
+Dec 2023,standard projects,jurong arcadia,37,3-room,69.0,66.0,80,207000,277000,2023-12-01,242000.0,67.5
+Dec 2023,standard projects,jurong arcadia,37,4-room,93.0,90.0,304,315000,394000,2023-12-01,354500.0,91.5
+Dec 2023,standard projects,jurong arcadia,37,5-room,113.0,110.0,174,431000,540000,2023-12-01,485500.0,111.5
+Dec 2023,standard projects,woodlands beacon,50,3-room,70.0,67.0,91,268000,340000,2023-12-01,304000.0,68.5
+Dec 2023,standard projects,woodlands beacon,50,4-room,93.0,90.0,308,318000,446000,2023-12-01,382000.0,91.5
+Dec 2023,standard projects,urban rise @ woodlands,51,2-room flexi,40.0,37.0,64,145000,186000,2023-12-01,165500.0,38.5
+Dec 2023,standard projects,urban rise @ woodlands,51,2-room flexi,50.0,48.0,133,174000,231000,2023-12-01,202500.0,49.0
+Dec 2023,standard projects,urban rise @ woodlands,51,3-room,70.0,67.0,85,251000,345000,2023-12-01,298000.0,68.5
+Dec 2023,standard projects,urban rise @ woodlands,51,4-room,94.0,92.0,306,337000,468000,2023-12-01,402500.0,93.0
+Dec 2023,standard projects,urban rise @ woodlands,51,5-room,113.0,110.0,260,468000,612000,2023-12-01,540000.0,111.5
+Dec 2023,plus project,chai chee green,39/43,3-room,69.0,66.0,97,298000,360000,2023-12-01,329000.0,67.5
+Dec 2023,plus project,chai chee green,39/43,4-room,93.0,90.0,627,421000,534000,2023-12-01,477500.0,91.5
+Dec 2023,plus project,chai chee green,39/43,5-room,113.0,110.0,260,569000,725000,2023-12-01,647000.0,111.5
+Dec 2023,plus project,sin ming residences,32,3-room,69.0,66.0,105,374000,473000,2023-12-01,423500.0,67.5
+Dec 2023,plus project,sin ming residences,32,4-room,93.0,90.0,627,519000,665000,2023-12-01,592000.0,91.5
+Dec 2023,prime project,alexandra peaks,59,2-room flexi,38.0,36.0,38,218000,277000,2023-12-01,247500.0,37.0
+Dec 2023,prime project,alexandra peaks,59,2-room flexi,48.0,46.0,15,332000,343000,2023-12-01,337500.0,47.0
+Dec 2023,prime project,alexandra peaks,59,3-room,66.0,63.0,121,380000,512000,2023-12-01,446000.0,64.5
+Dec 2023,prime project,alexandra peaks,59,4-room,89.0,86.0,730,533000,723000,2023-12-01,628000.0,87.5
+Dec 2023,prime project,ulu pandan vista,59,3-room,66.0,63.0,218,430000,541000,2023-12-01,485500.0,64.5
+Dec 2023,prime project,ulu pandan vista,59,4-room,89.0,86.0,672,598000,763000,2023-12-01,680500.0,87.5
+Oct 2023,standard projects,rail green i & ii @ cck,39/48,2-room flexi,38.0,36.0,114,106000,132000,2023-10-01,119000.0,37.0
+Oct 2023,standard projects,rail green i & ii @ cck,39/48,2-room flexi,48.0,46.0,283,134000,168000,2023-10-01,151000.0,47.0
+Oct 2023,standard projects,rail green i & ii @ cck,39/48,3-room,69.0,66.0,152,216000,272000,2023-10-01,244000.0,67.5
+Oct 2023,standard projects,rail green i & ii @ cck,39/48,4-room,94.0,91.0,802,319000,437000,2023-10-01,378000.0,92.5
+Oct 2023,standard projects,rail green i & ii @ cck,39/48,5-room,114.0,111.0,518,463000,595000,2023-10-01,529000.0,112.5
+Oct 2023,standard projects,rail green i & ii @ cck,39/48,3gen,120.0,115.0,26,471000,530000,2023-10-01,500500.0,117.5
+Oct 2023,standard projects,plantation edge i & ii,36/40,2-room flexi,38.0,36.0,52,114000,133000,2023-10-01,123500.0,37.0
+Oct 2023,standard projects,plantation edge i & ii,36/40,2-room flexi,48.0,46.0,211,142000,183000,2023-10-01,162500.0,47.0
+Oct 2023,standard projects,plantation edge i & ii,36/40,3-room,69.0,66.0,81,232000,279000,2023-10-01,255500.0,67.5
+Oct 2023,standard projects,plantation edge i & ii,36/40,4-room,93.0,90.0,353,353000,418000,2023-10-01,385500.0,91.5
+Oct 2023,standard projects,plantation edge i & ii,36/40,5-room,113.0,110.0,313,460000,568000,2023-10-01,514000.0,111.5
+Oct 2023,plus project,rajah residences,52,2-room flexi,38.0,36.0,31,176000,216000,2023-10-01,196000.0,37.0
+Oct 2023,plus project,rajah residences,52,2-room flexi,48.0,46.0,101,214000,294000,2023-10-01,254000.0,47.0
+Oct 2023,plus project,rajah residences,52,4-room,93.0,90.0,607,480000,675000,2023-10-01,577500.0,91.5
+Oct 2023,plus project,tenteram vantage,45,3-room,69.0,66.0,88,339000,420000,2023-10-01,379500.0,67.5
+Oct 2023,plus project,tenteram vantage,45,4-room,93.0,90.0,952,488000,628000,2023-10-01,558000.0,91.5
+Oct 2023,prime project,verandah @ kallang,42,2-room flexi,39.0,36.0,28,193000,237000,2023-10-01,215000.0,37.5
+Oct 2023,prime project,verandah @ kallang,42,2-room flexi,49.0,46.0,112,240000,303000,2023-10-01,271500.0,47.5
+Oct 2023,prime project,verandah @ kallang,42,3-room,69.0,66.0,110,368000,475000,2023-10-01,421500.0,67.5
+Oct 2023,prime project,verandah @ kallang,42,4-room,93.0,90.0,893,535000,675000,2023-10-01,605000.0,91.5
+Oct 2023,prime project,tanglin halt cascadia,54,3-room,66.0,63.0,155,364000,509000,2023-10-01,436500.0,64.5
+Oct 2023,prime project,tanglin halt cascadia,54,4-room,89.0,86.0,818,537000,702000,2023-10-01,619500.0,87.5

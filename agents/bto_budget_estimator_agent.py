@@ -1,13 +1,28 @@
-import boto3
-import json
-import logging
 import os
+import logging
+from dotenv import load_dotenv
 from botocore.config import Config
-
+import boto3
 from strands import Agent, tool
 from strands.handlers.callback_handler import PrintingCallbackHandler
 from strands.models.bedrock import BedrockModel
 
+# -------------------------------
+# load environment variables
+# -------------------------------
+load_dotenv()
+
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN")  
+
+AWS_REGION = "us-east-1"
+BEDROCK_MODEL_ID = "arn:aws:bedrock:us-ast-1:371061166839:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+
+
+# -------------------------------
+# logging setup
+# -------------------------------
 logger = logging.getLogger(__name__)
 logging.basicConfig(
     level=logging.INFO,
@@ -15,34 +30,63 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-# standard annuity formula to compute maximum loan given monthly repayment
-def max_hdb_loan(pmt_monthly, annual_rate=0.03, years=25):
+# -------------------------------
+# financial calculation helpers
+# -------------------------------
+def max_hdb_loan_from_income(income, annual_rate=0.03, years=25):
+    """compute max HDB loan based on monthly household income"""
+    monthly_payment = 0.3 * income  # 30% of household income
     r = annual_rate / 12.0
     N = years * 12
-    factor = (1 + r) ** N
-    L = pmt_monthly * (factor - 1) / (r * factor)
-    return round(L, 2)
+    factor = (1 + r)**N
+    loan = monthly_payment * (factor - 1) / (r * factor)
+    return round(loan, 2)
 
-# estimate maximum HDB loan given monthly household income, tenure, and rate
+def total_hdb_budget(cash_savings, cpf_savings, max_loan):
+    """total available budget including cash + CPF + loan"""
+    return round(cash_savings + cpf_savings + max_loan, 2)
+
+# -------------------------------
+# strands tool: hdb loan + budget
+# -------------------------------
 @tool
-def estimate_hdb_loan(household_income: int, annual_rate: float = 0.03, years: int = 25) -> float:
+def estimate_hdb_loan_with_budget(
+    household_income: int,
+    cash_savings: float,
+    cpf_savings: float,
+    bto_price: float,
+    annual_rate: float = 0.03,
+    tenure_years: int = 25
+):
     """
-    Estimate the max HDB loan based on household income.
-    - household_income: combined monthly income
-    - annual_rate: annual interest rate (default 3%)
-    - years: loan tenure in years (default 25)
+    estimate hdb loan and total budget including cash + cpf
+    
+    returns max loan, total budget, and affordability status
     """
-    pmt_monthly = 0.30 * household_income
-    r = annual_rate / 12.0
-    N = years * 12
-    factor = (1 + r) ** N
-    L = pmt_monthly * (factor - 1) / (r * factor)
-    return round(L, 2)
+    max_loan = max_hdb_loan_from_income(household_income, annual_rate, tenure_years)
+    total_budget = total_hdb_budget(cash_savings, cpf_savings, max_loan)
+    
+    if total_budget >= bto_price:
+        status = "Affordable"
+    else:
+        shortfall = bto_price - total_budget
+        status = f"Shortfall: ${shortfall:,.2f}"
+    
+    return {
+        "max_hdb_loan": max_loan,
+        "total_budget": total_budget,
+        "affordability_status": status
+    }
 
-WS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "us-west-2")
-BEDROCK_MODEL_ID = os.getenv("BEDROCK_MODEL_ID", "anthropic.claude-3-5-sonnet-20240620")
-
-session = boto3.Session()
+# -------------------------------
+# bedrock model setup
+# -------------------------------
+session = boto3.Session(
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    aws_session_token=AWS_SESSION_TOKEN,
+    region_name=AWS_REGION
+)
 
 model = BedrockModel(
     model_id=BEDROCK_MODEL_ID,
@@ -50,45 +94,66 @@ model = BedrockModel(
     boto_client_config=Config(
         read_timeout=120,
         connect_timeout=120,
-        retries=dict(max_attempts=3, mode="adaptive"),
+        retries=dict(max_attempts=3, mode="adaptive")
     ),
     boto_session=session
 )
 
+# -------------------------------
+# main agent setup
+# -------------------------------
 SYSTEM_PROMPT = """
 You are a Singapore HDB loan affordability assistant.
 
 You can:
-- Calculate the maximum HDB loan based on user inputs
-- Use 30% of combined household income as the max repayment
-- Assume 25 years tenure (unless specified)
-- Use stress interest rate = max(HDB concessionary 2.6%, 3.0%)
-- Explain results clearly and simply
-
-When users ask:
-- Extract their income, tenure, and rate if provided
-- Call the loan calculator tool to get the result
-- Present the answer in easy-to-understand terms
-""".strip()
+- Calculate the maximum HDB loan based on household income, cash savings, and CPF
+- Calculate total budget including max loan, cash, and CPF
+- Provide affordability status against a given BTO price
+- Present results clearly and simply
+"""
 
 loan_agent = Agent(
     model=model,
     system_prompt=SYSTEM_PROMPT,
-    tools=[estimate_hdb_loan],
+    tools=[estimate_hdb_loan_with_budget],
     callback_handler=PrintingCallbackHandler()
 )
 
+# -------------------------------
+# demo / test Run
+# -------------------------------
 def main():
-    prompts = [
-        "My household income is 9000, can you estimate my HDB loan?",
-        "We earn 7000 a month combined, want 20 years tenure, how much can we borrow?",
-        "If we earn 12000, what's the max HDB loan with 25 years tenure?"
+    test_cases = [
+        {
+            "household_income": 9000,
+            "cash_savings": 20000,
+            "cpf_savings": 50000,
+            "bto_price": 350000,
+        },
+        {
+            "household_income": 7000,
+            "cash_savings": 10000,
+            "cpf_savings": 30000,
+            "bto_price": 400000,
+        },
+        {
+            "household_income": 12000,
+            "cash_savings": 50000,
+            "cpf_savings": 80000,
+            "bto_price": 450000,
+        },
     ]
-    for prompt in prompts:
-        print(f"**Prompt**: {prompt}")
+    
+    for case in test_cases:
+        prompt = (
+            f"My household income is {case['household_income']}, "
+            f"cash savings ${case['cash_savings']}, CPF ${case['cpf_savings']}, "
+            f"interested in a BTO costing ${case['bto_price']}. "
+            f"Please estimate my HDB loan and affordability."
+        )
+        print(f"**Prompt:** {prompt}\n")
         response = loan_agent(prompt)
-        print("\n" + "-" * 80 + "\n")
-
+        print("\n" + "-"*80 + "\n")
 
 if __name__ == "__main__":
     main()

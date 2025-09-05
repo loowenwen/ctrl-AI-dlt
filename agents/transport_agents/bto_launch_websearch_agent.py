@@ -71,6 +71,7 @@ def unique_by_name(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return unique
 
 
+#extract coordinates 
 def extract_coords_only(items: List[Dict[str, Any]]) -> List[List[float]]:
     seen_pairs: set[Tuple[float, float]] = set()
     coords: List[List[float]] = []
@@ -113,7 +114,6 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
         page.on("response", handle_response)
         await page.goto(url, wait_until="domcontentloaded")
 
-        # Try to accept cookies silently
         try:
             for sel in (
                 'button#onetrust-accept-btn-handler',
@@ -127,7 +127,7 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
         except Exception:
             pass
 
-        # Prefer a precise wait for any coordinates request
+        
         try:
             await page.wait_for_response(lambda r: ("getCoordinates" in r.url or "coordinates" in r.url) and r.status == 200, timeout=15000)
         except Exception:

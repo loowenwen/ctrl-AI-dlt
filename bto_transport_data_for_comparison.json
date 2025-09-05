@@ -27,8 +27,8 @@
           "SUBWAY"
         ],
         "route_numbers": [
-          "159",
           "CE",
+          "159",
           "NS"
         ],
         "first_transport_mode": "BUS",
@@ -58,9 +58,9 @@
           "SUBWAY"
         ],
         "route_numbers": [
-          "72",
           "CE",
-          "NS"
+          "NS",
+          "72"
         ],
         "first_transport_mode": "BUS",
         "stop_sequence": [
@@ -127,8 +127,8 @@
         "SUBWAY"
       ],
       "route_numbers": [
-        "159",
         "CE",
+        "159",
         "NS"
       ],
       "first_transport_mode": "BUS",
@@ -174,9 +174,9 @@
           "SUBWAY"
         ],
         "route_numbers": [
-          "222",
+          "DT",
           "EW",
-          "DT"
+          "222"
         ],
         "first_transport_mode": "BUS",
         "stop_sequence": [
@@ -237,8 +237,8 @@
           "SUBWAY"
         ],
         "route_numbers": [
-          "87",
-          "DT"
+          "DT",
+          "87"
         ],
         "first_transport_mode": "BUS",
         "stop_sequence": [
@@ -267,9 +267,9 @@
         "SUBWAY"
       ],
       "route_numbers": [
-        "222",
+        "DT",
         "EW",
-        "DT"
+        "222"
       ],
       "first_transport_mode": "BUS",
       "stop_sequence": [

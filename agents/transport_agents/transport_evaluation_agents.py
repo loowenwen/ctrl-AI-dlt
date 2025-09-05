@@ -320,39 +320,62 @@ Provide a relative ranking of the provided BTO locations based purely on public 
 
         destination_address = formatted_data["destination"].get("address", postal_code)
         analysis_prompt = f"""
-You are helping a potential BTO buyer in Singapore decide if the transport accessibility of a specific BTO location fits their lifestyle. Provide a clear, concise, and relatable commute guide that focuses on how the commute impacts their daily routine. Use simple language, short sentences, and a structure that’s easy to scan. Include specific MRT station or bus stop codes and MRT lines where applicable.
+You are a Singapore public transport specialist analyzing BTO commuting accessibility.
 
-Describe the public transport accessibility for this SINGLE BTO location: {bto['name']} (Flat type: {bto.get('flatType', 'N/A')}) commuting to {destination_address} (Postal: {postal_code}) during {time_period}.
+TASK: Analyze transport accessibility for {bto['name']} (Flat: {bto.get('flatType', 'N/A')}) commuting to {destination_address} during {time_period}.
 
 Transport Data:
 {json.dumps(formatted_data, indent=2)}
 
-Structure your response exactly like this for clarity and decision-making:
-1. **Your Daily Commute**: Summarize the best route in 2-3 sentences, specifying the starting MRT station or bus stop by its code and MRT line if applicable (e.g., 'Walk 10 min to EW16 (East-West Line)'). Describe what the commute feels like (e.g., 'A 59-min trip with a quick MRT ride').
-2. **Key Details for Your Decision**:
-   - **Journey Time**: How long it takes.
-   - **Starting Point**: Exact MRT station or bus stop code, MRT line if applicable, and walking distance/time (e.g., 'EW16 (East-West Line), 500m, 5 min – easy even in rain').
-   - **Transfers**: How complex and frequent (e.g., '1 transfer – simple, with buses every 5 min').
-   - **Transport Options**: Modes and reliability (e.g., 'MRT + bus – dependable, with backup routes').
-3. **Is This BTO Right for You?**: 2-3 bullet points on transport-related pros and cons for their lifestyle (e.g., 'Pro: Flexible routes for shift workers; Con: Longer walks may tire you').
-4. **Decision Tip**: One sentence on who this BTO suits (e.g., 'Ideal for those who value reliable MRT access and don’t mind a 10-min walk').
+Return ONLY a valid JSON object with this structure:
 
-Consider ONLY:
-1. Total journey time
-2. Walking accessibility to transport nodes (include specific station/stop codes and MRT lines)
-3. Transfer complexity and frequency
-4. Transport mode variety and reliability
+{{
+    "daily_commute": {{
+        "summary": "string",
+        "total_time_minutes": number,
+        "feeling": "string"
+    }},
+    "key_details": {{
+        "journey_time": "string",
+        "starting_point": {{
+            "station_code": "string",
+            "station_name": "string", 
+            "walking_distance_meters": number,
+            "walking_time_minutes": number,
+            "accessibility_note": "string"
+        }},
+        "transfers": {{
+            "count": number,
+            "complexity": "string",
+            "frequency": "string"
+        }},
+        "transport_options": {{
+            "modes": ["string"],
+            "reliability": "string",
+            "backup_routes": boolean
+        }}
+    }},
+    "pros_and_cons": {{
+        "pros": ["string"],
+        "cons": ["string"]
+    }},
+    "decision_tip": "string"
+}}
 
-DO NOT consider price, fares, amenities, or any non-transport factors.
-DO NOT compare to other locations.
-DO NOT include a numerical score or rating.
-Focus purely on how easy it is to get from this BTO to the destination using public transport.
-Keep the response under 300 words for quick reading.
+Focus ONLY on transport factors. Use actual data from the transport information provided.
 """
         try:
             agent = self.create_single_bto_agent()
             analysis = agent(analysis_prompt)
-            return {"result": analysis}
+            
+            # Parse JSON response
+            try:
+                parsed_analysis = json.loads(analysis)
+                return {"result": parsed_analysis}
+            except json.JSONDecodeError:
+                # If JSON parsing fails, return the raw text as fallback
+                return {"result": analysis, "format": "text", "note": "JSON parsing failed, returning raw text"}
+                
         except Exception as e:
             return {"error": f"AI analysis failed: {str(e)}"}
 
@@ -364,21 +387,75 @@ Keep the response under 300 words for quick reading.
         if not all_transport_data:
             return {"error": "No transport data available for comparison"}
         analysis_prompt = f"""
-Analyze and rank the public transport accessibility for these {len(all_transport_data)} BTO locations commuting to {destination_address} during {time_period}.
+You are a Singapore public transport specialist analyzing BTO locations for commuting accessibility.
+
+TASK: Rank these {len(all_transport_data)} BTO locations from BEST to WORST for commuting to {destination_address} during {time_period}.
 
 Transport Data:
 {json.dumps(all_transport_data, indent=2)}
 
-Provide a relative ranking considering ONLY:
-1. Total journey time (lower is better)
-2. Walking accessibility to transport nodes (shorter distances are better)
-3. Transfer complexity and frequency (fewer transfers are better)
-4. Transport mode variety and reliability (more options are better)
+RANKING CRITERIA (in order of importance):
+1. Total Journey Time - Shorter is better
+2. Walking Distance to First Transport - Shorter walks are more convenient  
+3. Number of Transfers - Fewer transfers = less complexity
+4. Transport Mode Variety - More options = better reliability
+5. Peak Hour Performance - How well it handles rush hour
 
-DO NOT consider price, amenities, or any non-transport factors.
-Focus purely on how easy it is to get from each BTO to the destination using public transport.
+Return ONLY a valid JSON object with this structure:
 
-Provide a clear ranking with transport-specific explanations, including flat types for reference.
+{{
+    "ranking": [
+        {{
+            "rank": number,
+            "bto_name": "string",
+            "flat_types": "string"
+        }}
+    ],
+    "winner_analysis": {{
+        "bto_name": "string",
+        "advantages": {{
+            "journey_time": {{
+                "minutes": number,
+                "vs_others": [number],
+                "advantage": "string"
+            }},
+            "starting_point": {{
+                "station_code": "string",
+                "station_name": "string",
+                "walking_distance_meters": number,
+                "walking_time_minutes": number,
+                "advantage": "string"
+            }},
+            "transfers": {{
+                "count": number,
+                "vs_others": [number],
+                "advantage": "string"
+            }},
+            "transport_options": {{
+                "modes": ["string"],
+                "reliability": "string",
+                "backup_routes": boolean,
+                "advantage": "string"
+            }},
+            "peak_performance": "string"
+        }},
+        "key_differentiator": "string"
+    }},
+    "comparison_table": [
+        {{
+            "bto_name": "string",
+            "total_time_minutes": number,
+            "walking_time_minutes": number,
+            "transfers": number,
+            "best_route": "string",
+        }}
+    ],
+    "summary": {{ 
+        "overall_assessment": "string" (This overall assessment should be detailed, informative and 3 lines long)
+    }}
+}}
+
+Focus ONLY on transport factors. Use actual data from the transport information provided.
 """
         try:
             agent = self.create_comparison_agent()

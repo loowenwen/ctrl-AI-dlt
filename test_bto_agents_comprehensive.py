@@ -22,7 +22,7 @@ def test_single_bto_analysis():
     print("=" * 70)
     
     # Clear any existing comparison data first
-    print("Clearing existing comparison data...")
+    print("🧹 Clearing existing comparison data...")
     clear_comparison_data()
     
     # Test cases for single BTO analysis

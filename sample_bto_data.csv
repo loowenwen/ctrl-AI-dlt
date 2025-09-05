@@ -1,0 +1,5 @@
+exercise,project_type,project,waiting_time,flat_type,estimated_floor_area,estimated_internal_floor_area,units,min_price,max_price,exercise_date,avg_price,avg_floor_area
+Feb 2025,standard projects,woodlands north verge,47/48,2-room flexi,40.0,38.0,67,140000,204000,2025-02-01,172000.0,39.0
+May 2024,standard projects,toa payoh bidadari,36/40,4-room,93.0,70.0,150,520000,580000,2024-05-01,550000.0,81.5
+Aug 2024,plus projects,kallang riverside,30/32,3-room,67.0,55.0,80,420000,480000,2024-08-01,450000.0,61.0
+Nov 2024,prime projects,queenstown peak,25/28,4-room,93.0,70.0,45,720000,850000,2024-11-01,785000.0,81.5

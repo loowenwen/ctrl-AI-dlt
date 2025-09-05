@@ -1,342 +1,443 @@
-import argparse
 import os
-import sys
+import logging
+from datetime import datetime, timedelta
 from dataclasses import dataclass
-from typing import List, Optional, Tuple
-
+from typing import Optional, Dict, List, Tuple
 import pandas as pd
-from strands import Agent
-from strands.models import BedrockModel
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from sklearn.preprocessing import LabelEncoder
+from dotenv import load_dotenv
+import boto3
+from botocore.config import Config
+from strands import Agent, tool
+from strands.handlers.callback_handler import PrintingCallbackHandler
+from strands.models.bedrock import BedrockModel
+
+# load environment variables
+load_dotenv()
+
+# AWS configuration
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN")
+
+AWS_REGION = "us-east-1"
+BEDROCK_MODEL_ID = (
+    "arn:aws:bedrock:us-east-1:371061166839:inference-profile/us.anthropic.claude-3-5-sonnet-20240620-v1:0"
+)
+
+# logging setup
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger(__name__)
 
 
 @dataclass
-class EstimateResult:
+class PriceEstimate:
+    """enhanced result structure for price estimates"""
     flat_type: str
     project_location: str
-    min_price: Optional[float]
-    median_price: Optional[float]
-    max_price: Optional[float]
+    project_tier: str
+    exercise_date: str
+    estimated_price: Optional[float]
+    confidence_interval: Tuple[Optional[float], Optional[float]]
     sample_size: int
+    historical_trend: Optional[str]
+    methodology: str
 
 
-class BTOPricingEstimator:
-    """
-    Estimate BTO flat prices by flat type and project location using BTO_Pricing.csv.
+class BTOProjectClassifier:
+    """classify BTO projects into Standard/Plus/Prime tiers"""
+    
+    def __init__(self):
+        self.session = boto3.Session(
+            aws_access_key_id=AWS_ACCESS_KEY_ID,
+            aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+            aws_session_token=AWS_SESSION_TOKEN,
+            region_name=AWS_REGION,
+        )
+        
+        self.model = BedrockModel(
+            model_id=BEDROCK_MODEL_ID,
+            max_tokens=64,
+            temperature=0,
+            boto_client_config=Config(
+                read_timeout=120,
+                connect_timeout=120,
+                retries=dict(max_attempts=3, mode="adaptive"),
+            ),
+            boto_session=self.session,
+        )
+        
+        self.agent = Agent(
+            model=self.model,
+            system_prompt="""
+            You are an HDB BTO project classifier for Singapore. 
+            
+            Classification Rules:
+            - Prime: Central locations (Queenstown, Kallang/Whampoa, Bukit Merah, Toa Payoh Central), 
+                     near CBD, restricted eligibility, highest prices
+            - Plus: Mature towns near MRT, good connectivity (Ang Mo Kio, Bedok, Clementi, Jurong East),
+                    attractive locations with good amenities
+            - Standard: Non-mature estates, further from city center, basic amenities
+            
+            Always classify into exactly one category: Standard, Plus, or Prime.
+            Return only the classification without explanation.
+            """,
+            callback_handler=PrintingCallbackHandler(),
+        )
+    
+    def classify(self, project_town: str, project_name: Optional[str] = None) -> str:
+        """classify a BTO project into tier"""
+        prompt = f"Town/Estate: {project_town}\n"
+        if project_name:
+            prompt += f"Project Name: {project_name}\n"
+        prompt += "\nClassify this HDB BTO project as: Standard, Plus, or Prime"
+        
+        result = str(self.agent(prompt)).strip()
+        
+        # normalize output
+        result_lower = result.lower()
+        if "prime" in result_lower:
+            return "Prime"
+        elif "plus" in result_lower:
+            return "Plus"
+        else:
+            return "Standard"
 
-    Expected CSV columns (case-insensitive match by normalized names):
-    - flat_type
-    - project_location (or town/estate)
-    - price or min_price/median_price/max_price
-    """
 
-    def __init__(self, csv_path: str) -> None:
-        if not os.path.isabs(csv_path):
-            csv_path = os.path.abspath(csv_path)
-        if not os.path.exists(csv_path):
-            raise FileNotFoundError(f"CSV not found: {csv_path}")
+class EnhancedBTOCostEstimator:
+    """enhanced BTO cost estimator using classification and regression"""
+    
+    def __init__(self, csv_path: str):
         self.csv_path = csv_path
-        self.df = self._load_and_normalize(csv_path)
-
-    @staticmethod
-    def _normalize_col(name: str) -> str:
-        return name.strip().lower().replace(" ", "_")
-
-    def _load_and_normalize(self, path: str) -> pd.DataFrame:
+        self.df = self._load_and_prepare_data(csv_path)
+        self.classifier = BTOProjectClassifier()
+        logger.info(f"Loaded {len(self.df)} records from {csv_path}")
+    
+    def _load_and_prepare_data(self, path: str) -> pd.DataFrame:
+        """load and prepare the BTO pricing data"""
         df = pd.read_csv(path)
-        df = df.rename(columns={c: self._normalize_col(c) for c in df.columns})
+        
+        # normalize column names
+        df.columns = df.columns.str.strip().str.lower().str.replace(' ', '_')
+        
+        # standardize column names
+        column_mapping = {
+            'town': 'project_location',
+            'estate': 'project_location', 
+            'location': 'project_location',
+            'type': 'flat_type',
+            'room_type': 'flat_type',
+            'price': 'median_price',
+            'avg_price': 'median_price',
+            'launch_date': 'date',
+            'application_date': 'date',
+            'sales_launch': 'date',
+            'exercise_date': 'date',
+            'exercise': 'date',
+            'project_type': 'project_tier'
+        }
+        
+        for old_col, new_col in column_mapping.items():
+            if old_col in df.columns and new_col not in df.columns:
+                df[new_col] = df[old_col]
+        
+        # normalize project tier using project_type if available
+        if 'project_tier' in df.columns:
+            df['project_tier'] = df['project_tier'].astype(str).str.strip().str.lower()
+            tier_map = {
+                'standard projects': 'Standard',
+                'plus project': 'Plus',
+                'prime project': 'Prime',
+            }
+            df['project_tier'] = df['project_tier'].map(lambda x: tier_map.get(x, x.title()))
 
-        # Try to standardize location column naming
-        if "project_location" not in df.columns:
-            for candidate in ["location", "town", "estate", "project", "area"]:
-                if candidate in df.columns:
-                    df = df.rename(columns={candidate: "project_location"})
-                    break
-
-        # Try to standardize price columns
-        has_min = "min_price" in df.columns
-        has_median = "median_price" in df.columns
-        has_max = "max_price" in df.columns
-        if not (has_min and has_median and has_max):
-            # If there is a single price column, treat it as median
-            for candidate in ["price", "avg_price", "average_price", "mean_price"]:
-                if candidate in df.columns:
-                    df = df.rename(columns={candidate: "median_price"})
-                    has_median = True
-                    break
-
-        # Ensure required columns exist
-        required = ["flat_type", "project_location", "median_price"]
-        for col in required:
+        # parse dates (prefer exercise_date/exercise if present -> mapped to 'date')
+        if 'date' in df.columns:
+            df['date'] = pd.to_datetime(df['date'], errors='coerce')
+            df['date_ordinal'] = df['date'].map(lambda x: x.toordinal() if pd.notna(x) else None)
+        else:
+            # Ensure the column exists to avoid downstream KeyErrors
+            if 'date_ordinal' not in df.columns:
+                df['date_ordinal'] = np.nan
+        
+        # ensure required columns exist
+        required_cols = ['project_location', 'flat_type', 'median_price']
+        for col in required_cols:
             if col not in df.columns:
-                df[col] = pd.NA
-
-        # Coerce price fields to numeric
-        for col in ["min_price", "median_price", "max_price"]:
+                df[col] = None
+        
+        # convert price columns to numeric
+        price_cols = ['min_price', 'median_price', 'max_price']
+        for col in price_cols:
             if col in df.columns:
-                df[col] = pd.to_numeric(df[col], errors="coerce")
-
-        # Parse temporal columns if available
-        time_candidates: List[str] = [
-            "launch_date",
-            "release_date",
-            "application_date",
-            "sales_launch",
-            "date",
-            "year",
-        ]
-        parsed_time_col = None
-        for c in time_candidates:
-            if c in df.columns:
-                if c == "year":
-                    # Handle year-only as datetime (Jan 1 of that year)
-                    df[c] = pd.to_numeric(df[c], errors="coerce")
-                    df["__parsed_date"] = pd.to_datetime(df[c], format="%Y", errors="coerce")
-                else:
-                    df["__parsed_date"] = pd.to_datetime(df[c], errors="coerce", utc=True).dt.tz_localize(None)
-                parsed_time_col = "__parsed_date"
-                break
-
-        # If no date parsed, leave as None; downstream will fallback
-        df[parsed_time_col] = df[parsed_time_col] if parsed_time_col else pd.NaT
-
-        # Normalize text columns
-        for col in ["flat_type", "project_location"]:
-            if col in df.columns:
-                df[col] = (
-                    df[col]
-                    .astype(str)
-                    .str.strip()
-                    .str.lower()
-                )
-
+                df[col] = pd.to_numeric(df[col], errors='coerce')
+        
+        # normalize text fields
+        if 'project_location' in df.columns:
+            df['project_location'] = df['project_location'].astype(str).str.strip().str.lower()
+        if 'flat_type' in df.columns:
+            df['flat_type'] = df['flat_type'].astype(str).str.strip().str.lower()
+            # canonicalize variations like "2-room flexi" -> "2-room"
+            df['flat_type'] = df['flat_type'].str.replace(r'(\d+-room).*', r'\1', regex=True)
+        
+        # add project tier if not present (classify existing data)
+        if 'project_tier' not in df.columns:
+            logger.info("Project tier not found in data. Will classify on-demand.")
+        
         return df
+    
+    def _filter_data(self, flat_type: str, project_tier: str) -> pd.DataFrame:
+        """filter data by flat type and project tier"""
+        filtered_df = self.df.copy()
+        
+        # filter by flat type
+        if flat_type:
+            flat_type_normalized = flat_type.lower().strip()
+            filtered_df = filtered_df[
+                filtered_df['flat_type'].str.contains(flat_type_normalized, na=False)
+            ]
+        
+        # filter by project tier
+        if 'project_tier' in filtered_df.columns:
+            filtered_df = filtered_df[
+                filtered_df['project_tier'].str.lower() == project_tier.lower()
+            ]
+        else:
+            # If no tier column, we need to classify each location
+            # This is computationally expensive, so we'll sample or use heuristics
+            logger.warning("No project_tier column found. Using heuristic filtering.")
+            # Add basic heuristic filtering based on known tier locations
+            tier_keywords = {
+                'prime': ['queenstown', 'kallang', 'bukit merah', 'toa payoh'],
+                'plus': ['ang mo kio', 'bedok', 'clementi', 'jurong east', 'tampines'],
+                'standard': []  # Default case
+            }
+            
+            if project_tier.lower() in ['prime', 'plus']:
+                keywords = tier_keywords[project_tier.lower()]
+                if keywords:
+                    mask = filtered_df['project_location'].str.contains(
+                        '|'.join(keywords), na=False, case=False
+                    )
+                    filtered_df = filtered_df[mask]
+        
+        return filtered_df
+    
+    def _perform_regression(self, data: pd.DataFrame, target_date_ordinal: int) -> Dict:
+        """Perform regression analysis on filtered data"""
+        if len(data) < 3:
+            return {
+                'predicted_price': None,
+                'confidence_interval': (None, None),
+                'trend': 'insufficient_data',
+                'methodology': 'insufficient_data'
+            }
+        
+        # prepare regression data
+        if 'date_ordinal' not in data.columns:
+            # If no temporal signal, fallback to statistics
+            mean_price = data['median_price'].mean()
+            std_price = data['median_price'].std()
+            return {
+                'predicted_price': mean_price,
+                'confidence_interval': (mean_price - std_price, mean_price + std_price),
+                'trend': 'statistical_average',
+                'methodology': 'mean_with_std_no_date'
+            }
 
-    def estimate_cost(self, flat_type: str, project_location: str) -> EstimateResult:
-        ft = flat_type.strip().lower()
-        loc = project_location.strip().lower()
-
-        subset = self.df
-        if ft:
-            subset = subset[subset["flat_type"] == ft]
-        if loc:
-            subset = subset[subset["project_location"].str.contains(loc, na=False)]
-
-        sample_size = len(subset)
-        if sample_size == 0:
-            return EstimateResult(
-                flat_type=flat_type,
-                project_location=project_location,
-                min_price=None,
-                median_price=None,
-                max_price=None,
-                sample_size=0,
-            )
-
-        min_price = subset["min_price"].min(skipna=True) if "min_price" in subset else None
-        median_price = subset["median_price"].median(skipna=True) if "median_price" in subset else None
-        max_price = subset["max_price"].max(skipna=True) if "max_price" in subset else None
-
-        return EstimateResult(
+        valid_data = data.dropna(subset=['date_ordinal', 'median_price'])
+        
+        if len(valid_data) < 3:
+            # fallback to simple statistics
+            mean_price = data['median_price'].mean()
+            std_price = data['median_price'].std()
+            return {
+                'predicted_price': mean_price,
+                'confidence_interval': (mean_price - std_price, mean_price + std_price),
+                'trend': 'statistical_average',
+                'methodology': 'mean_with_std'
+            }
+        
+        # perform linear regression
+        X = valid_data['date_ordinal'].values.reshape(-1, 1)
+        y = valid_data['median_price'].values
+        
+        model = LinearRegression()
+        model.fit(X, y)
+        
+        # predict for target date
+        predicted_price = model.predict([[target_date_ordinal]])[0]
+        
+        # calculate confidence interval (simple approach)
+        residuals = y - model.predict(X)
+        mse = np.mean(residuals**2)
+        std_error = np.sqrt(mse)
+        
+        confidence_interval = (
+            predicted_price - 1.96 * std_error,  # 95% CI
+            predicted_price + 1.96 * std_error
+        )
+    
+        # determine trend
+        slope = model.coef_[0]
+        if slope > 1000:  # SGD per year
+            trend = 'increasing'
+        elif slope < -1000:
+            trend = 'decreasing'
+        else:
+            trend = 'stable'
+        
+        return {
+            'predicted_price': predicted_price,
+            'confidence_interval': confidence_interval,
+            'trend': trend,
+            'methodology': 'linear_regression'
+        }
+    
+    def estimate_cost(
+        self,
+        project_location: str,
+        flat_type: str,
+        exercise_date: str = "2025-10-01",
+        project_name: Optional[str] = None,
+        use_existing_classification: bool = True
+        ) -> PriceEstimate:
+        """estimate BTO cost using classification and regression pipeline"""
+    
+        logger.info(f"Estimating cost for {flat_type} in {project_location}")
+        
+        # step 1: classify the project
+        if use_existing_classification and 'project_tier' in self.df.columns:
+            location_matches = self.df[
+                self.df['project_location'].str.contains(project_location.lower(), na=False)
+            ]
+            if len(location_matches) > 0:
+                project_tier = location_matches['project_tier'].iloc[0]
+                logger.info(f"Found existing classification: {project_tier}")
+            else:
+                project_tier = self.classifier.classify(project_location, project_name)
+                logger.info(f"Agent classified as: {project_tier}")
+        else:
+            project_tier = self.classifier.classify(project_location, project_name)
+            logger.info(f"Agent classified as: {project_tier}")
+        
+        # step 2: parse exercise date
+        exercise_dt = datetime.strptime(exercise_date, "%Y-%m-%d")
+        target_ordinal = exercise_dt.toordinal()
+        
+        # step 3: filter historical data
+        filtered_data = self._filter_data(flat_type, project_tier)
+        logger.info(f"Found {len(filtered_data)} matching records for {flat_type} / {project_tier}")
+        
+        # fallback logic
+        if filtered_data.empty:
+            logger.warning("No matching records found. Falling back to flat_type only.")
+            filtered_data = self.df[self.df['flat_type'].str.contains(flat_type.lower(), na=False)]
+        
+        if filtered_data.empty:
+            logger.warning("Still no matches. Falling back to ALL data.")
+            filtered_data = self.df.copy()
+        
+        # step 4: perform regression analysis
+        regression_results = self._perform_regression(filtered_data, target_ordinal)
+        
+        # step 5: create result
+        estimate = PriceEstimate(
             flat_type=flat_type,
             project_location=project_location,
-            min_price=float(min_price) if pd.notna(min_price) else None,
-            median_price=float(median_price) if pd.notna(median_price) else None,
-            max_price=float(max_price) if pd.notna(max_price) else None,
-            sample_size=sample_size,
+            project_tier=project_tier,
+            exercise_date=exercise_date,
+            estimated_price=regression_results['predicted_price'],
+            confidence_interval=regression_results['confidence_interval'],
+            sample_size=len(filtered_data),
+            historical_trend=regression_results['trend'],
+            methodology=regression_results['methodology']
         )
+        return estimate
 
-    def estimate_with_trend(self, flat_type: str, project_location: str) -> EstimateResult:
-        """Estimate using latest median and a simple time-trend projection if timestamps exist.
-
-        Trend logic:
-        - If a parsed date column exists for matching records, fit a simple linear trend on median_price vs date ordinal.
-        - Predict one time step beyond the latest point (approx 1 month) as a proxy for next release.
-        - If no dates or insufficient points, apply a modest uplift (e.g., 3%).
-        """
-        base = self.estimate_cost(flat_type, project_location)
-        # If we lack sample or median, just return base
-        if base.sample_size == 0 or base.median_price is None:
-            return base
-
-        ft = flat_type.strip().lower()
-        loc = project_location.strip().lower()
-        subset = self.df
-        subset = subset[(subset["flat_type"] == ft) & (subset["project_location"].str.contains(loc, na=False))]
-
-        if "__parsed_date" in subset.columns and subset["__parsed_date"].notna().sum() >= 3 and subset["median_price"].notna().sum() >= 3:
-            # Prepare data for regression
-            s = subset.dropna(subset=["__parsed_date", "median_price"]).copy()
-            if len(s) >= 3:
-                x = s["__parsed_date"].map(pd.Timestamp.toordinal).astype(float)
-                y = s["median_price"].astype(float)
-                # Simple linear fit
+    
+    def batch_estimate(
+        self,
+        locations: List[str],
+        flat_types: List[str],
+        exercise_date: str = "2025-10-01"
+    ) -> List[PriceEstimate]:
+        """perform batch estimation for multiple location-flat type combinations"""
+        results = []
+        
+        for location in locations:
+            for flat_type in flat_types:
                 try:
-                    coeffs = pd.Series(y).polyfit(x, deg=1)
-                    slope, intercept = float(coeffs[0]), float(coeffs[1])
-                    next_x = float(s["__parsed_date"].max().toordinal() + 30)  # approx +30 days
-                    projected = slope * next_x + intercept
-                    # Clamp unreasonable projections
-                    if projected > 0 and projected < base.median_price * 1.8:
-                        return EstimateResult(
-                            flat_type=flat_type,
-                            project_location=project_location,
-                            min_price=base.min_price,
-                            median_price=float(projected),
-                            max_price=base.max_price,
-                            sample_size=base.sample_size,
-                        )
-                except Exception:
-                    pass
-
-        # Fallback modest uplift
-        uplifted = float(base.median_price * 1.03)
-        return EstimateResult(
-            flat_type=flat_type,
-            project_location=project_location,
-            min_price=base.min_price,
-            median_price=uplifted,
-            max_price=base.max_price,
-            sample_size=base.sample_size,
-        )
+                    estimate = self.estimate_cost(location, flat_type, exercise_date)
+                    results.append(estimate)
+                except Exception as e:
+                    logger.error(f"Failed to estimate {flat_type} in {location}: {str(e)}")
+        
+        return results
 
 
-def _default_csv_path() -> str:
-    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    return os.path.join(root, "bto_pricing_detail.csv")
-
-
-def run_cli(argv: Optional[Tuple[str, ...]] = None) -> int:
-    parser = argparse.ArgumentParser(description="BTO Cost Estimator")
-    parser.add_argument("--flat-type", required=True, help="Flat type, e.g., 2-room, 3-room, 4-room, 5-room")
-    parser.add_argument("--location", required=True, help="Project location keyword, e.g., Toa Payoh")
-    parser.add_argument("--csv", default=_default_csv_path(), help="Path to BTO_Pricing.csv")
-
-    args = parser.parse_args(args=list(argv) if argv is not None else None)
-
-    estimator = BTOPricingEstimator(csv_path=args.csv)
-    result = estimator.estimate_cost(flat_type=args.flat_type, project_location=args.location)
-
-    # Print concise summary
-    print("BTO Cost Estimate")
-    print(f"- Flat Type: {result.flat_type}")
-    print(f"- Location: {result.project_location}")
-    print(f"- Samples: {result.sample_size}")
-    if result.sample_size == 0:
-        print("No matching records found.")
-        return 1
-    if result.min_price is not None:
-        print(f"- Min Price: ${result.min_price:,.0f}")
-    if result.median_price is not None:
-        print(f"- Median Price: ${result.median_price:,.0f}")
-    if result.max_price is not None:
-        print(f"- Max Price: ${result.max_price:,.0f}")
-    return 0
-
-
-def estimate_bto_cost(flat_type: str, project_location: str, csv_path: Optional[str] = None) -> EstimateResult:
-    """Convenience function for use by other modules/notebooks."""
-    estimator = BTOPricingEstimator(csv_path=csv_path or _default_csv_path())
-    return estimator.estimate_cost(flat_type=flat_type, project_location=project_location)
-
-
-# ----------------------
-# LLM classification + chat
-# ----------------------
-
-def _maybe_web_search(query: str) -> str:
-    """Optional web search using Tavily if available; returns textual context or empty string."""
+def interactive_estimator(csv_path: Optional[str] = None):
+    """interactive command-line interface for the estimator"""
+    if not csv_path:
+        csv_path = input("Enter path to BTO pricing CSV file: ").strip()
+    
     try:
-        from tavily import TavilyClient  # type: ignore
-        api_key = os.environ.get("TAVILY_API_KEY")
-        if not api_key:
-            return ""
-        client = TavilyClient(api_key=api_key)
-        res = client.search(query=query, max_results=3)
-        if isinstance(res, dict) and "results" in res:
-            snippets = []
-            for r in res.get("results", [])[:3]:
-                snippet = r.get("content") or r.get("snippet") or ""
-                if snippet:
-                    snippets.append(str(snippet))
-            return "\n\n".join(snippets)
-        return ""
-    except Exception:
-        return ""
-
-
-CLASSIFY_SYSTEM_PROMPT = """
-You are an HDB BTO project classifier. Classify a project into EXACTLY ONE of: Standard, Plus, Prime.
-
-Rules summary:
-- Prime: Very central, near city center, high-demand/amenity locations (e.g., Queenstown, Kallang/Whampoa, Bukit Merah).
-- Plus: Attractive or nearer to transport/amenities, but not the most central (e.g., matured towns near MRT hubs).
-- Standard: Typical estates without special centrality or premium restrictions.
-
-Return strictly one of: "Standard", "Plus", or "Prime". Do not include any other text.
-"""
-
-
-def classify_project_tier(location: str, flat_type: str, model_id: str = "us.amazon.nova-lite-v1:0") -> str:
-    model = BedrockModel(model_id=model_id, temperature=0.2)
-    agent = Agent(model=model, system_prompt=CLASSIFY_SYSTEM_PROMPT)
-    web_context = _maybe_web_search(f"HDB BTO location context: {location}")
-    prompt = (
-        f"Location: {location}\n"
-        f"Flat Type: {flat_type}\n"
-        f"Context (optional):\n{web_context}\n\n"
-        f"Classify as exactly one label."
-    )
-    out = str(agent(prompt)).strip()
-    out_lower = out.lower()
-    if "prime" in out_lower:
-        return "Prime"
-    if "plus" in out_lower:
-        return "Plus"
-    return "Standard"
-
-
-def interactive_chat(csv_path: Optional[str] = None, model_id: str = "us.amazon.nova-lite-v1:0") -> None:
-    print("\nBTO Cost Estimator (interactive). Type 'exit' at any prompt to quit.\n")
-    estimator = BTOPricingEstimator(csv_path=csv_path or _default_csv_path())
-    while True:
-        loc = input("Project location: ").strip()
-        if not loc or loc.lower() in ("exit", "quit"):
-            break
-        ft = input("Flat type (e.g., 2-room, 3-room, 4-room, 5-room): ").strip()
-        if not ft or ft.lower() in ("exit", "quit"):
-            break
-
-        print("\nClassifying project tier (Standard/Plus/Prime)...")
-        try:
-            tier = classify_project_tier(location=loc, flat_type=ft, model_id=model_id)
-        except Exception as e:
-            tier = "Standard"
-        print(f"Tier: {tier}")
-
-        print("Estimating price with time-trend adjustment...")
-        trended = estimator.estimate_with_trend(flat_type=ft, project_location=loc)
-
-        print("\nResult")
-        print(f"- Location: {loc}")
-        print(f"- Flat Type: {ft}")
-        print(f"- Classified Tier: {tier}")
-        print(f"- Samples: {trended.sample_size}")
-        if trended.sample_size == 0:
-            print("No matching historical records found in CSV.")
-        if trended.min_price is not None:
-            print(f"- Historical Min: ${trended.min_price:,.0f}")
-        if trended.median_price is not None:
-            print(f"- Projected Median (next release): ${trended.median_price:,.0f}")
-        if trended.max_price is not None:
-            print(f"- Historical Max: ${trended.max_price:,.0f}")
-        print("")
+        estimator = EnhancedBTOCostEstimator(csv_path)
+        print("\n" + "="*60)
+        print("Enhanced BTO Cost Estimator")
+        print("="*60)
+        
+        while True:
+            print("\nEnter BTO project details (or 'quit' to exit):")
+            
+            location = input("Project location/town: ").strip()
+            if location.lower() in ['quit', 'exit']:
+                break
+                
+            flat_type = input("Flat type (e.g., 2-room, 3-room, 4-room, 5-room): ").strip()
+            if flat_type.lower() in ['quit', 'exit']:
+                break
+            
+            project_name = input("Project name (optional): ").strip() or None
+            exercise_date = input("Exercise date (YYYY-MM-DD, default: 2025-10-01): ").strip() or "2025-10-01"
+            
+            print("\nProcessing... (This may take a moment)")
+            
+            try:
+                estimate = estimator.estimate_cost(location, flat_type, exercise_date, project_name)
+                
+                print("\n" + "-"*50)
+                print("ESTIMATION RESULTS")
+                print("-"*50)
+                print(f"Location: {estimate.project_location}")
+                print(f"Flat Type: {estimate.flat_type}")
+                print(f"Project Tier: {estimate.project_tier}")
+                print(f"Exercise Date: {estimate.exercise_date}")
+                print(f"Sample Size: {estimate.sample_size}")
+                
+                if estimate.estimated_price:
+                    print(f"Estimated Price: ${estimate.estimated_price:,.0f}")
+                    if estimate.confidence_interval[0] and estimate.confidence_interval[1]:
+                        print(f"95% Confidence Interval: ${estimate.confidence_interval[0]:,.0f} - ${estimate.confidence_interval[1]:,.0f}")
+                    print(f"Historical Trend: {estimate.historical_trend}")
+                    print(f"Methodology: {estimate.methodology}")
+                else:
+                    print("Unable to generate estimate due to insufficient data")
+                
+            except Exception as e:
+                print(f"Error generating estimate: {str(e)}")
+                logger.error(f"Estimation error: {str(e)}", exc_info=True)
+        
+    except Exception as e:
+        print(f"Failed to initialize estimator: {str(e)}")
+        logger.error(f"Initialization error: {str(e)}", exc_info=True)
 
 
 if __name__ == "__main__":
-    # If no additional CLI args are passed, start interactive chat.
-    if len(sys.argv) == 1:
-        interactive_chat()
-    else:
-        sys.exit(run_cli())
-
-
+    interactive_estimator()

@@ -56,18 +56,11 @@ SYSTEM_PROMPT=(
         "sentiment as dont need to travel far to use facilities, etc).\n"
         "Each document begins with a tag like `[N|URL]` or `[N]`. When you cite evidence, include `idx`=N. "
         "If a URL is present in the tag, include the same `url`; otherwise set `url` to an empty string.\n"
-        "Respond ONLY with valid JSON matching this schema:\n"
-        "{\n"
-        '  "overall": "positive|negative|mixed",\n'
-        '  "score": number,\n'
-        '  "summary": string,\n'
-        '  "evidence": [ {"idx": number, "url": string, "label": "positive|negative|mixed", "score": number, "quote": string} ],\n'
-        '  "per_item": [ {"idx": number, "url": string, "label": "positive|negative|mixed", "score": number, "quote": string} ]\n'
-        "}\n"
+        "Include evidence and referenced links in your answer. Give as much details as possible."
         "Rules:\n"
-        "- Ensure JSON parses without errors; do NOT use code fences.\n"
         "- Keep quotes short and verbatim from the text.\n"
         "- Calibrate scores: positive≈0.3..1, negative≈-0.3..-1, mixed≈-0.29..0.29.\n"
+        "NOTE: document may contain SPELLING ERRORS. (e.g Rich is actually Ridge), please fix the spelling errors!"
 )
 
 JUNK_LINE_REGEXES = [

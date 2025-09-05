@@ -50,7 +50,7 @@ model = BedrockModel(
 )
 
 SYSTEM_PROMPT = (
-    "Use the tool [download_video_transcribe] to get the video transcript for the given url."
+    "Use the tool [download_video_transcribe] to get the video transcript for the given urls. Dont download more than 10."
 )
 
 def _run(cmd: str):

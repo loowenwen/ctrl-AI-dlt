@@ -80,10 +80,11 @@ topic={
         "concerns": ["MRT", "schools", "resale value"],
         }
 
-prompt="Tell me about how people feel about Toa Payoh July 2025 HDB BTO launch"
-result = graph(str(topic))
+# prompt="Tell me about how people feel about Toa Payoh July 2025 HDB BTO launch"
+# result = graph(str(topic))
 
-# Access the results
-print(f"\nStatus: {result.status}")
-print(f"Execution order: {[node.node_id for node in result.execution_order]}")
+# # Access the results
+# print(f"\nStatus: {result.status}")
+# print(f"Execution order: {[node.node_id for node in result.execution_order]}")
 
+# print(f"final answer: {result.results["sentiment"].result}")

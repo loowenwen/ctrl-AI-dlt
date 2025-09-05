@@ -21,10 +21,6 @@ logging.basicConfig(
 
 load_dotenv(".env")
 
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN")  
-
 AWS_REGION = "us-east-1"
 BEDROCK_MODEL_ID = os.getenv("CLAUDE_35")
 
@@ -51,9 +47,7 @@ SYSTEM_PROMPT=(
         Include evidence and referenced links in your answer.
         Rules:
         - Ensure JSON parses without errors; do NOT use code fences.
-        - Keep quotes short and verbatim from the text.
-        - Calibrate scores: positive≈0.3..1, negative≈-0.3..-1, mixed≈-0.29..0.29.
-        NOTE: document may contain SPELLING ERRORS. (e.g Rich is actually Ridge), please fix the spelling errors!"""
+       """
 )
 
 

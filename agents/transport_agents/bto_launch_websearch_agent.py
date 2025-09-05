@@ -5,8 +5,8 @@ import json
 from typing import Any, Dict, List, Optional, Tuple
 from playwright.async_api import async_playwright
 
-
 def normalise_coordinates_payload(data: Any) -> List[Dict[str, Any]]:
+    """Transform API response into a clean format with essential BTO fields."""
     items: List[Dict[str, Any]] = []
     if isinstance(data, dict):
         data = data.get("features") or data.get("data") or data.get("items") or data.get("results") or []
@@ -20,34 +20,29 @@ def normalise_coordinates_payload(data: Any) -> List[Dict[str, Any]]:
             if isinstance(coords, str):
                 lat, lon = json.loads(coords)
             else:
-                # GeoJSON is [lon, lat]
                 lon, lat = coords[0], coords[1]
             props = item.get("properties", {})
-            desc = None
-            try:
-                desc = (props.get("description") or [{}])[0]
-            except Exception:
-                desc = {}
-            town = (desc or {}).get("town") or props.get("town") or (desc or {}).get("projectName")
-            launch_date = (desc or {}).get("launchStartDate") or props.get("launchStartDate") or ""
+            desc = props.get("description", [{}])[0] if props.get("description") else {}
+            town = desc.get("town") or props.get("town") or desc.get("projectName")
             if not town:
                 continue
             bto_info = {
                 "name": town,
+                "town": desc.get("town") or props.get("town", town),
+                "flatType": desc.get("flatType") or props.get("flatType", "N/A"),
+                "region": props.get("region", ""),
                 "lat": round(float(lat), 6),
-                "lon": round(float(lon), 6),
-                "launch_date": launch_date,
+                "lon": round(float(lon), 6)
             }
-            bto_info.update(desc)
-            bto_info.update(props)
-            items.append(bto_info)
+            if bto_info["name"]:
+                items.append(bto_info)
         except Exception:
             continue
     return items
 
-
 def dedupe_and_sort(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    seen: set[Tuple[Any, Any, Any]] = set()
+    """Remove duplicates and sort by name, lat, lon."""
+    seen: set[Tuple[str, float, float]] = set()
     out: List[Dict[str, Any]] = []
     for it in items:
         key = (it.get("name"), it.get("lat"), it.get("lon"))
@@ -58,8 +53,8 @@ def dedupe_and_sort(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     out.sort(key=lambda x: (str(x.get("name") or ""), float(x.get("lat") or 0), float(x.get("lon") or 0)))
     return out
 
-
 def unique_by_name(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Keep only the first entry per BTO name."""
     seen_names: set[str] = set()
     unique: List[Dict[str, Any]] = []
     for it in items:
@@ -70,26 +65,25 @@ def unique_by_name(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         unique.append(it)
     return unique
 
-
-#extract coordinates 
 def extract_coords_only(items: List[Dict[str, Any]]) -> List[List[float]]:
+    """Extract only lat/lon pairs."""
     seen_pairs: set[Tuple[float, float]] = set()
     coords: List[List[float]] = []
     for it in items:
         try:
             lat = float(it.get("lat"))
             lon = float(it.get("lon"))
+            pair = (lat, lon)
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            coords.append([lat, lon])
         except Exception:
             continue
-        pair = (lat, lon)
-        if pair in seen_pairs:
-            continue
-        seen_pairs.add(pair)
-        coords.append([lat, lon])
     return coords
 
-
 async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: Optional[str], by_name: bool, coords_only: bool) -> None:
+    """Fetch BTO data and save as clean JSON or CSV."""
     results: List[Dict[str, Any]] = []
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=headless)
@@ -127,13 +121,11 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
         except Exception:
             pass
 
-        
         try:
             await page.wait_for_response(lambda r: ("getCoordinates" in r.url or "coordinates" in r.url) and r.status == 200, timeout=15000)
         except Exception:
             await asyncio.sleep(3)
 
-        # small grace period for late arrivals
         await asyncio.sleep(1)
         await browser.close()
 
@@ -141,32 +133,29 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
     if by_name:
         results = unique_by_name(results)
 
-    # Save to bto_data.json
     json_output_path = "bto_data.json"
-    with open(json_output_path, "w", encoding="utf-8") as f:
-        json.dump(results, f, indent=2, ensure_ascii=False)
-    if verbose or pretty:
-        print(f"Saved {len(results)} BTO records to {json_output_path}")
-
     if coords_only:
         coords = extract_coords_only(results)
         if csv_path:
             with open(csv_path, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
-                writer.writerow(["lat", "lon"])  # header
+                writer.writerow(["lat", "lon"])
                 writer.writerows(coords)
             if verbose or pretty:
                 print(f"Wrote {len(coords)} coordinate pairs to {csv_path}")
         else:
-            if pretty:
-                print(json.dumps(coords, indent=2, ensure_ascii=False))
-            else:
-                print(json.dumps(coords, separators=(",", ":"), ensure_ascii=False))
+            output = json.dumps(coords, indent=2 if pretty else None, separators=(",", ":") if not pretty else None)
+            print(output)
         return
+
+    with open(json_output_path, "w", encoding="utf-8") as f:
+        json.dump(results, f, indent=2 if pretty else None)
+    if verbose or pretty:
+        print(f"Saved {len(results)} BTO records to {json_output_path}")
 
     if csv_path:
         if results:
-            fieldnames = sorted(set(k for item in results for k in item.keys()))
+            fieldnames = ["name", "town", "flatType", "region", "lat", "lon"]
             with open(csv_path, "w", newline="", encoding="utf-8") as f:
                 writer = csv.DictWriter(f, fieldnames=fieldnames)
                 writer.writeheader()
@@ -176,15 +165,10 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
                 print(f"Wrote {len(results)} rows to {csv_path}")
         else:
             print("No results to write.")
-    else:
-        if pretty:
-            print(json.dumps(results, indent=2, ensure_ascii=False))
-        else:
-            print(json.dumps(results, separators=(",", ":"), ensure_ascii=False))
-
 
 def parse_args() -> argparse.Namespace:
-    ap = argparse.ArgumentParser(description="Fetch BTO coordinates and print clean output")
+    """Parse command-line arguments."""
+    ap = argparse.ArgumentParser(description="Fetch BTO coordinates and save as clean JSON")
     ap.add_argument("--url", default="https://homes.hdb.gov.sg/home/finding-a-flat", help="Target URL")
     ap.add_argument("--headless", action="store_true", help="Run browser headless")
     ap.add_argument("--verbose", action="store_true", help="Print network logs and warnings")
@@ -193,7 +177,6 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--unique-by-name", action="store_true", help="Keep only the first entry per estate/town name")
     ap.add_argument("--coords-only", action="store_true", help="Output only coordinate pairs [[lat, lon], ...]")
     return ap.parse_args()
-
 
 if __name__ == "__main__":
     args = parse_args()

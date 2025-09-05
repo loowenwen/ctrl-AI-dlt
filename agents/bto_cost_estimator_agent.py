@@ -385,7 +385,7 @@ class EnhancedBTOCostEstimator:
 def interactive_estimator(csv_path: Optional[str] = None):
     """interactive command-line interface for the estimator"""
     if not csv_path:
-        csv_path = input("Enter path to BTO pricing CSV file: ").strip()
+        csv_path = "bto_pricing_detail_cleaned.csv"
     
     try:
         estimator = EnhancedBTOCostEstimator(csv_path)

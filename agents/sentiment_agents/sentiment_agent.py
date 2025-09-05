@@ -3,41 +3,65 @@ from typing import Any, Dict, List, Tuple
 import re
 import os
 import json
-try:
-    import boto3
-except Exception:  # pragma: no cover
-    boto3 = None
+import boto3
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
 from typing import Optional
 from botocore.config import Config
+from strands import Agent, tool
+from strands.handlers.callback_handler import PrintingCallbackHandler
+from strands.models.bedrock import BedrockModel
+import logging
+logger = logging.getLogger(__name__)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
 load_dotenv(".env")
 
-SA_DEBUG = os.environ.get("SA_DEBUG", "0") in ("1", "true", "True")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN")  
 
-# Nova only runs in us-east-1 on Bedrock. Allow override via NOVA_REGION env.
-NOVA_REGION = os.environ.get("NOVA_REGION", "us-east-1")
+AWS_REGION = "us-east-1"
+BEDROCK_MODEL_ID = "arn:aws:bedrock:us-east-1:371061166839:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
 
-# ---------------- Config helpers ----------------
-
-NOVA_PRO_MODEL_ID = "amazon.nova-pro-v1:0"
-DEFAULT_PROMPT = (
-    "Determine the sentiment of the following transcription in terms of the pros and cons "
-    "and whether it's positive or negative on a scale of 1-10."
+session = boto3.Session(
+    aws_access_key_id=AWS_ACCESS_KEY_ID,
+    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
+    aws_session_token=AWS_SESSION_TOKEN,
+    region_name=AWS_REGION
 )
 
-def _boto3_client(service: str, region: Optional[str] = None, profile: Optional[str] = None):
-    region = region or NOVA_REGION
-    if profile:
-        session = boto3.Session(profile_name=profile, region_name=region)
-    else:
-        session = boto3.Session(region_name=region)
-    return session.client(service, config=Config(connect_timeout=3600, read_timeout=3600, retries={'max_attempts': 1}))
+model = BedrockModel(
+    model_id=BEDROCK_MODEL_ID,
+    max_tokens=1024,
+    boto_client_config=Config(
+        read_timeout=120,
+        connect_timeout=120,
+        retries=dict(max_attempts=3, mode="adaptive")
+    ),
+    boto_session=session
+)
 
+user_input = "HDB BTO Toa Payoh July 2025 4-room flat reviews, MRT access, school proximity, resale value sentiment on TikTok and YouTube"
 
-def _lower(s: str) -> str:
-    return s.lower() if isinstance(s, str) else ""
+SYSTEM_PROMPT=(
+        "You are a careful analyst. Determine sentiment about the topic represented by the documents. "
+        "The following parameters/topic was given by the user:{user_input}"
+        "Make sure the sentiment is regarding the prompter (e.g high demand btos may be low sentiment to prompter "
+        "as chances of receiving bto is lower, High cost may be low sentiment as expensive, good facilities is good "
+        "sentiment as dont need to travel far to use facilities, etc).\n"
+        "Each document begins with a tag like `[N|URL]` or `[N]`. When you cite evidence, include `idx`=N. "
+        "If a URL is present in the tag, include the same `url`; otherwise set `url` to an empty string.\n"
+        "Include evidence and referenced links in your answer. Give as much details as possible."
+        "Rules:\n"
+        "- Keep quotes short and verbatim from the text.\n"
+        "- Calibrate scores: positive≈0.3..1, negative≈-0.3..-1, mixed≈-0.29..0.29.\n"
+        "NOTE: document may contain SPELLING ERRORS. (e.g Rich is actually Ridge), please fix the spelling errors!"
+)
 
 JUNK_LINE_REGEXES = [
     r"^\s*Advertisement\b.*$",
@@ -65,553 +89,17 @@ INLINE_JUNK_PATTERNS = [
     (r"\s{2,}", " "),                             # collapse spaces
 ]
 
-def _strip_nav_chrome(text: str) -> str:
-    """Remove common site chrome, nav, and boilerplate lines."""
-    if not isinstance(text, str) or not text.strip():
-        return ""
-    # Normalize newlines
-    lines = [ln.strip() for ln in text.splitlines()]
-    kept: list[str] = []
-    import re as _re
-    compiled = [ _re.compile(p, flags=_re.IGNORECASE) for p in JUNK_LINE_REGEXES ]
-    for ln in lines:
-        if not ln:
-            kept.append(ln)
-            continue
-        if any(rx.match(ln) for rx in compiled):
-            continue
-        # drop lines that are just rating stars or bullets with no words
-        if _re.match(r"^[★☆\-•*]+$", ln):
-            continue
-        kept.append(ln)
-    out = "\n".join(kept)
-    # Inline cleanups
-    for pat, rep in INLINE_JUNK_PATTERNS:
-        out = _re.sub(pat, rep, out)
-    # Collapse excessive blank lines
-    out = _re.sub(r"\n{3,}", "\n\n", out)
-    return out.strip()
-
-def normalize_article_text(text: str, max_chars: int = 120000) -> str:
-    """Lightly denoise long article blobs: remove nav chrome, ads, artifacts,
-    collapse whitespace, and cap length. Safe for feeding to LLMs.
-    """
-    t = _strip_nav_chrome(text)
-    if not t:
-        return ""
-    # Replace weird quotes/dashes with simple ASCII to stabilize tokenization
-    t = (t
-         .replace("“", '"').replace("”", '"')
-         .replace("’", "'").replace("‘", "'")
-         .replace("—", "-").replace("–", "-")
-    )
-    # Normalize section headings like "1." or "2." followed by big gaps
-    import re as _re
-    t = _re.sub(r"\n\s*([0-9]+\.)\s+", r"\n\1 ", t)
-    # Collapse multiple spaces and fix stray spaces before punctuation
-    t = _re.sub(r"\s{2,}", " ", t)
-    t = _re.sub(r"\s+([,.;:!?])", r"\1", t)
-    # Ensure reasonably bounded size
-    if len(t) > max_chars:
-        t = t[:max_chars].rsplit("\n", 1)[0]
-    return t.strip()
-
-def _gather_text_blobs(orchestrator_output: Any) -> List[Tuple[str, str]]:
-    """
-    Returns list of (url, text) from items[]. Prefer video.data.nova, else content.
-    Accepts either an orchestrator dict or a list of text blobs.
-    """
-    # Allow callers to pass a raw list of text blobs
-    if isinstance(orchestrator_output, list):
-        return [("", normalize_article_text(t)) for t in orchestrator_output if isinstance(t, str) and t.strip()]
-    # Existing dict-handling logic follows
-    items = orchestrator_output.get("data", {}).get("items", [])
-    blobs: List[Tuple[str,str]] = []
-    for it in items:
-        url = it.get("url", "")
-        # Discover has children videos
-        if it.get("kind") == "tiktok_discover":
-            for child in it.get("videos", []):
-                cu = child.get("url", url)
-                vout = child.get("video", {})
-                text = normalize_article_text(vout.get("data", {}).get("nova") or "")
-                if text:
-                    blobs.append((cu, text))
-            # also include any page text on the discover page itself
-            if it.get("content"):
-                page_content = normalize_article_text(it["content"])
-                if page_content:
-                    blobs.append((url, page_content))
-            continue
-
-        # Video kinds
-        v = it.get("video", {})
-        text = normalize_article_text(v.get("data", {}).get("nova") if isinstance(v, dict) else "")
-        if text:
-            blobs.append((url, text))
-        # Articles / generic
-        if it.get("content"):
-            article_content = normalize_article_text(it.get("content"))
-            if article_content:
-                blobs.append((url, article_content))
-    return blobs
-def _analyze_with_nova_texts(
-    texts: List[str],
-    *,
-    sources: Optional[List[Dict[str, Any]]] = None,
-    region: Optional[str] = None,
-    profile: Optional[str] = None,
-    max_chars_per_doc: int = 1600,
-    temperature: float = 0.2,
-    max_tokens: int = 900
-) -> Dict[str, Any]:
-    """
-    Analyze a simple list of text blobs (optionally with sources) with Nova and return normalized JSON.
-    Evidence will include `url` when available, populated via tags or backfill.
-    """
-    if not texts:
-        return {"ok": False, "error": "No text provided for sentiment analysis."}
-
-    docs: List[str] = []
-    for i, t in enumerate(texts, 1):
-        if not isinstance(t, str) or not t.strip():
-            continue
-        snippet = normalize_article_text(t)[:max_chars_per_doc]
-        if not snippet:
-            continue
-        url = ""
-        if sources and len(sources) >= i:
-            url = sources[i-1].get("url") or ""
-        tag = f"[{i}|{url}]" if url else f"[{i}]"
-        docs.append(f"{tag} TEXT: {snippet}")
-
-    if not docs:
-        return {"ok": False, "error": "No valid text after normalization."}
-
-    combined_docs = "\n\n".join(docs)
-
-    # Build idx_to_url mapping for backfill
-    idx_to_url = {}
-    if sources:
-        for i in range(1, len(docs)+1):
-            if i-1 < len(sources):
-                u = sources[i-1].get("url") or ""
-                if u:
-                    idx_to_url[i] = u
-
-    instruction = (
-        "You are a careful analyst. Determine sentiment about the topic represented by the documents. "
-        "Make sure the sentiment is regarding the prompter (e.g high demand btos may be low sentiment to prompter "
-        "as chances of receiving bto is lower, High cost may be low sentiment as expensive, good facilities is good "
-        "sentiment as dont need to travel far to use facilities, etc).\n"
-        "Each document begins with a tag like `[N|URL]` or `[N]`. When you cite evidence, include `idx`=N. "
-        "If a URL is present in the tag, include the same `url`; otherwise set `url` to an empty string.\n"
-        "Respond ONLY with valid JSON matching this schema:\n"
-        "{\n"
-        '  "overall": "positive|negative|mixed",\n'
-        '  "score": number,\n'
-        '  "summary": string,\n'
-        '  "evidence": [ {"idx": number, "url": string, "label": "positive|negative|mixed", "score": number, "quote": string} ],\n'
-        '  "per_item": [ {"idx": number, "url": string, "label": "positive|negative|mixed", "score": number, "quote": string} ]\n'
-        "}\n"
-        "Rules:\n"
-        "- Ensure JSON parses without errors; do NOT use code fences.\n"
-        "- Keep quotes short and verbatim from the text.\n"
-        "- Calibrate scores: positive≈0.3..1, negative≈-0.3..-1, mixed≈-0.29..0.29.\n"
-    )
-
-    try:
-        out_text = _nova_analyze_text(
-            docs=combined_docs,
-            instruction=instruction,
-            region=region or NOVA_REGION,
-            profile=profile or os.environ.get("AWS_PROFILE"),
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
-
-        out_text = _unwrap_json_fences(out_text)
-        try:
-            parsed = json.loads(out_text)
-        except Exception:
-            candidate = _extract_largest_json(out_text) if isinstance(out_text, str) else None
-            parsed = json.loads(candidate) if candidate else None
-
-        if not isinstance(parsed, dict):
-            return {"ok": False, "error": "Nova did not return valid JSON.", "raw": out_text}
-
-        # Backfill URLs using idx if needed
-        if isinstance(parsed, dict) and idx_to_url:
-            parsed = _backfill_urls_with_idx(parsed, idx_to_url)
-
-        try:
-            norm = parse_nova_json_output(json.dumps(parsed))
-        except Exception:
-            norm = {
-                "overall": parsed.get("overall", "mixed"),
-                "score": parsed.get("score", 0.0),
-                "summary": parsed.get("summary", ""),
-                "evidence": parsed.get("evidence", []),
-                "per_item": parsed.get("per_item", []),
-            }
-
-        return {"ok": True, **norm}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
-def _backfill_urls_with_idx(parsed: Dict[str, Any], idx_to_url: Dict[int, str]) -> Dict[str, Any]:
-    def _fix_list(lst_name: str):
-        arr = parsed.get(lst_name)
-        if not isinstance(arr, list):
-            parsed[lst_name] = []
-            return
-        fixed = []
-        for rec in arr:
-            if not isinstance(rec, dict):
-                continue
-            idx = rec.get("idx")
-            url = rec.get("url") or ""
-            if isinstance(idx, int) and not url:
-                url = idx_to_url.get(idx, "") or ""
-                rec["url"] = url
-            # Drop the idx in the final normalized output later; keep it here for now
-            fixed.append(rec)
-        parsed[lst_name] = fixed
-    _fix_list("evidence")
-    _fix_list("per_item")
-    return parsed
-
-def _invoke_bedrock_messages(body: Dict[str, Any], *, region: Optional[str] = None,
-                             profile: Optional[str] = None) -> Dict[str, Any]:
-    if boto3 is None:
-        raise RuntimeError("boto3 is not installed. Install boto3 to call Bedrock.")
-    client = _boto3_client("bedrock-runtime", region or NOVA_REGION, profile)
-    resp = client.invoke_model(modelId=NOVA_PRO_MODEL_ID, body=json.dumps(body))
-    return json.loads(resp["body"].read())
 
 
-# Helper function to analyze text using Nova Pro Messages API
-
-def _nova_analyze_text(
-    docs: str,
-    instruction: str,
-    *,
-    region: Optional[str] = None,
-    profile: Optional[str] = None,
-    chunk_chars: int = 6000,
-    max_tokens: int = 1000,
-    temperature: float = 0.0,
-    top_p: float = 0.1,
-    system_text: str = "You are a helpful analyst.",
-    model_id: Optional[str] = None,
-    inference_profile_arn: Optional[str] = None
-) -> str:
-    """
-    Send (possibly chunked) text to Nova Pro via Messages API with a controlling prompt.
-    Returns the first text content in the model response, or the raw JSON on parse failure.
-    """
-    # Simple chunking if docs is long
-    chunks = [docs[i:i + chunk_chars] for i in range(0, len(docs), chunk_chars)] or [""]
-    messages = [{"role": "user", "content": [{"text": instruction}]}]
-    for i, ch in enumerate(chunks, 1):
-        messages.append({"role": "user", "content": [{"text": f"(Transcript part {i}/{len(chunks)})\n{ch}"}]})
-    body = {
-        "schemaVersion": "messages-v1",
-        "system": [{"text": system_text}],
-        "messages": messages,
-        "inferenceConfig": {"maxTokens": max_tokens, "temperature": temperature, "topP": top_p}
-    }
-    result = _invoke_bedrock_messages(
-        body,
-        region=region,
-        profile=profile
-    )
-    try:
-        # Standard extraction
-        return result["output"]["message"]["content"][0]["text"]
-    except Exception:
-        # Fallback: return raw JSON string for debugging
-        return json.dumps(result, indent=2)
-
-
-# Helper: Extract the largest balanced JSON object from arbitrary text (no recursive regex)
-def _unwrap_json_fences(text: str) -> str:
-    """
-    If the string starts and ends with triple backtick fences (``` or ```json ... ```), strip those fences.
-    Trims whitespace. Returns the cleaned string.
-    """
-    if not isinstance(text, str):
-        return text
-    s = text.strip()
-    # Remove ```json ... ``` or ``` ... ``` fences from start/end
-    # Regex: ^```(?:json)?\s*([\s\S]*?)\s*```$
-    m = re.match(r"^```(?:json)?\s*([\s\S]*?)\s*```$", s, flags=re.IGNORECASE)
-    if m:
-        return m.group(1).strip()
-    return s
-
-def _extract_largest_json(text: str) -> Optional[str]:
-    """
-    Extract the largest balanced JSON object substring from arbitrary text without using
-    recursive regex (Python's `re` doesn't support (?R)). Returns None if not found.
-    """
-    if not isinstance(text, str) or "{" not in text:
-        return None
-
-    # If wrapped in a fenced block like ```json ... ```, strip the fences first
-    fenced = re.search(r"```(?:json)?\s*(\{.*?\})\s*```", text, flags=re.DOTALL | re.IGNORECASE)
-    if fenced:
-        return fenced.group(1)
-
-    best = None
-    best_len = 0
-    depth = 0
-    start_idx = None
-
-    for i, ch in enumerate(text):
-        if ch == "{":
-            if depth == 0:
-                start_idx = i
-            depth += 1
-        elif ch == "}":
-            if depth > 0:
-                depth -= 1
-                if depth == 0 and start_idx is not None:
-                    candidate = text[start_idx:i+1]
-                    # Prefer the longest balanced object
-                    if len(candidate) > best_len:
-                        best = candidate
-                        best_len = len(candidate)
-                    start_idx = None
-
-    return best
-
-# ---------------- Nova output normalization helpers ----------------
-
-ALLOWED_LABELS = {"positive", "negative", "mixed"}
-
-def _clamp_score(x: Any, lo: float = -1.0, hi: float = 1.0) -> float:
-    try:
-        v = float(x)
-    except Exception:
-        return 0.0
-    return max(lo, min(hi, v))
-
-def _norm_label(v: Any) -> str:
-    s = (str(v or "")).strip().lower()
-    return s if s in ALLOWED_LABELS else "mixed"
-
-def parse_nova_json_output(raw: str) -> Dict[str, Any]:
-    """
-    Convert Nova output (which may contain ```json fences or extra text) into a
-    normalized sentiment payload. Returns a dict with keys:
-      - overall: "positive" | "negative" | "mixed"
-      - score: float in [-1, 1]
-      - summary: str
-      - evidence: list[ {url, label, score, quote} ]
-      - per_item: list[ {url, label, score, quote} ]
-    Raises ValueError if no valid JSON object can be extracted.
-    """
-    if not isinstance(raw, str) or not raw.strip():
-        raise ValueError("Empty Nova output")
-
-    # 1) Strip code fences if present
-    s = _unwrap_json_fences(raw)
-
-    # 2) Try direct parse; if it fails, extract the largest balanced JSON block
-    parsed: Optional[Dict[str, Any]] = None
-    try:
-        parsed = json.loads(s)
-    except Exception:
-        candidate = _extract_largest_json(s)
-        if not candidate:
-            raise ValueError("No JSON object found in Nova output")
-        parsed = json.loads(candidate)
-
-    if not isinstance(parsed, dict):
-        raise ValueError("Parsed JSON is not an object")
-
-    # 3) Normalize fields
-    overall = _norm_label(parsed.get("overall"))
-    score = _clamp_score(parsed.get("score", 0.0))
-    summary = str(parsed.get("summary", "") or "")
-
-    def _coerce_elems(arr: Any, limit: int) -> List[Dict[str, Any]]:
-        out: List[Dict[str, Any]] = []
-        if not isinstance(arr, list):
-            return out
-        for rec in arr[:limit]:
-            if not isinstance(rec, dict):
-                continue
-            out.append({
-                "url": str(rec.get("url", "") or ""),
-                "label": _norm_label(rec.get("label")),
-                "score": _clamp_score(rec.get("score", 0.0)),
-                "quote": str(rec.get("quote", "") or "")
-            })
-        return out
-
-    evidence = _coerce_elems(parsed.get("evidence", []), limit=5)
-    per_item = _coerce_elems(parsed.get("per_item", []), limit=30)
-
-    return {
-        "overall": overall,
-        "score": score,
-        "summary": summary,
-        "evidence": evidence,
-        "per_item": per_item
-    }
-
-def _analyze_with_nova(orchestrator_output: Dict[str, Any], *,
-                       region: Optional[str] = None,
-                       profile: Optional[str] = None,
-                       max_docs: int = 18,
-                       max_chars_per_doc: int = 1600,
-                       temperature: float = 0.2,
-                       max_tokens: int = 900) -> Dict[str, Any]:
-    """
-    Use Amazon Nova Pro (via nova_with_text) to analyze sentiment and return structured JSON.
-    We feed the concatenated docs as the 'transcript_text' and use the instruction as 'prompt'.
-    Evidence will include `url` when available, populated via tags or backfill.
-    """
-    # Gather and rank documents by length; cap count
-    blobs = _gather_text_blobs(orchestrator_output)
-    blobs = sorted(blobs, key=lambda x: len(x[1] or ""), reverse=True)[:max_docs]
-
-    docs: List[str] = []
-    idx_to_url: Dict[int, str] = {}
-    for i, (url, text) in enumerate(blobs, 1):
-        snippet = (text or "")[:max_chars_per_doc]
-        tag = f"[{i}|{url}]" if url else f"[{i}]"
-        docs.append(f"{tag} TEXT: {snippet}")
-        if url:
-            idx_to_url[i] = url
-
-    if not docs:
-        return {"ok": False, "error": "No documents to analyze."}
-
-    combined_docs = "\n\n".join(docs)
-
-    # Instruction prompt for Nova
-    instruction = (
-        "You are a careful analyst. Determine sentiment about the topic represented by the documents. "
-        "Make sure the sentiment is regarding the prompter (e.g high demand btos may be low sentiment to prompter "
-        "as chances of receiving bto is lower, High cost may be low sentiment as expensive, good facilities is good "
-        "sentiment as dont need to travel far to use facilities, etc).\n"
-        "Also, do take note of PEOPLE's sentiment (e.g neighbors in environment, are they friendly? More elderly or younger? What are the vibes of the location, etc.)"
-        "Each document begins with a tag like `[N|URL]` or `[N]`. When you cite evidence, include `idx`=N. "
-        "If a URL is present in the tag, include the same `url`; otherwise set `url` to an empty string.\n"
-        "Respond ONLY with valid JSON matching this schema:\n"
-        "{\n"
-        '  "overall": "positive|negative|mixed",\n'
-        '  "score": number,\n'
-        '  "summary": string,\n'
-        '  "evidence": [ {"idx": number, "url": string, "label": "positive|negative|mixed", "score": number, "quote": string} ],\n'
-        '  "per_item": [ {"idx": number, "url": string, "label": "positive|negative|mixed", "score": number, "quote": string} ]\n'
-        "}\n"
-        "Rules:\n"
-        "- Ensure JSON parses without errors; do NOT use code fences.\n"
-        "- Keep quotes short and verbatim from the text.\n"
-        "- Calibrate scores: positive≈0.3..1, negative≈-0.3..-1, mixed≈-0.29..0.29.\n"
-    )
-
-    # Call Nova Pro: we pass docs as 'docs' and the instruction as 'instruction'
-    try:
-        out_text = _nova_analyze_text(
-            docs=combined_docs,
-            instruction=instruction,
-            region=NOVA_REGION,
-            profile=os.environ.get("AWS_PROFILE"),
-            max_tokens=max_tokens,
-            temperature=temperature,
-        )
-        if SA_DEBUG:
-            print("[SA] Nova raw output (first 400 chars):", (out_text or "")[:400])
-
-        # Pre-clean Nova output for JSON fences
-        out_text = _unwrap_json_fences(out_text)
-
-        # Try to parse the JSON Nova returned
-        parsed = None
-        try:
-            parsed = json.loads(out_text)
-        except Exception:
-            # Heuristic: grab the largest balanced JSON object block without recursive regex
-            candidate = _extract_largest_json(out_text) if isinstance(out_text, str) else None
-            if candidate:
-                try:
-                    parsed = json.loads(candidate)
-                except Exception:
-                    parsed = None
-
-        if not isinstance(parsed, dict):
-            return {"ok": False, "error": "Nova did not return valid JSON.", "raw": out_text}
-
-        # Backfill URLs using idx if needed
-        if isinstance(parsed, dict) and idx_to_url:
-            parsed = _backfill_urls_with_idx(parsed, idx_to_url)
-
-        try:
-            norm = parse_nova_json_output(json.dumps(parsed))
-        except Exception:
-            # If normalization fails (should be rare here), fall back to parsed keys
-            norm = {
-                "overall": parsed.get("overall", "mixed"),
-                "score": parsed.get("score", 0.0),
-                "summary": parsed.get("summary", ""),
-                "evidence": parsed.get("evidence", []),
-                "per_item": parsed.get("per_item", []),
-            }
-
-        return {"ok": True, **norm}
-    except Exception as e:
-        return {"ok": False, "error": str(e)}
-
-def analyze_sentiment(orchestrator_output_or_texts: Any, *,
-                     use_bedrock: bool = True,
-                     bedrock_region: str | None = None,
-                     claude_model_id: str | None = None,
-                     temperature: float = 0.2,
-                     sources: List[Any] | None = None) -> Dict[str, Any]:
-    """
-    Flexible entry point:
-
-    - If a dict with shape {"data": {"items": [...]}} is provided, we harvest URLs+texts and analyze with Nova.
-    - If a list[str] is provided, we analyze those texts directly (URLs optional; `sources` is used to embed URLs in tags).
-    """
-    # Case: orchestrator payload dict
-    if isinstance(orchestrator_output_or_texts, dict):
-        return _analyze_with_nova(
-            orchestrator_output_or_texts,
-            region=NOVA_REGION,
-            profile=os.environ.get("AWS_PROFILE"),
-            temperature=temperature,
-        )
-
-    # Case: list of raw text blobs (or a single string)
-    if isinstance(orchestrator_output_or_texts, list):
-        texts = [t for t in orchestrator_output_or_texts if isinstance(t, str) and t.strip()]
-        return _analyze_with_nova_texts(
-            texts,
-            sources=sources,
-            region=NOVA_REGION,
-            profile=os.environ.get("AWS_PROFILE"),
-            temperature=temperature,
-        )
-
-    if isinstance(orchestrator_output_or_texts, str) and orchestrator_output_or_texts.strip():
-        return _analyze_with_nova_texts(
-            [orchestrator_output_or_texts.strip()],
-            sources=sources,
-            region=NOVA_REGION,
-            profile=os.environ.get("AWS_PROFILE"),
-            temperature=temperature,
-        )
-
-    return {"ok": False, "error": "No input provided to analyze_sentiment."}
+Sentiment=Agent(
+    model=model,
+    system_prompt=SYSTEM_PROMPT,
+    callback_handler=PrintingCallbackHandler()
+)
 
 
 if __name__ == "__main__":
-    bundle={
+    bundle="""{
         "ok": True,
         "data": {
             "items": [
@@ -894,37 +382,10 @@ if __name__ == "__main__":
             "version": "1.0.0"
         },
         "error": None
-        }
+        }"""
+
+    sent = Sentiment(bundle)
+
+    logging.info(f"Sentiment analysis result: {sent}")
+
     
-    sent = analyze_sentiment(
-        orchestrator_output_or_texts=bundle,     # <- from run_orchestrator(...)
-        use_bedrock=True,               # use Nova (Bedrock)
-        temperature=0.2
-    )
-
-    # Demo: parse a fenced Nova JSON string
-    demo_raw = '''```json
-{
-  "overall": "positive",
-  "score": 0.6,
-  "summary": "The public sentiment towards the HDB BTO July 2025 launch is largely positive. The documents highlight strong demand, variety of units, and good locations near amenities and transportation. However, some concerns about unit variety and potential crowding are noted.",
-  "evidence": [
-    {
-      "url": "https://www.asiaone.com/money/hdb-bto-july-2025-review-locations-resale-values-amenities-and-more",
-      "label": "positive",
-      "score": 0.7,
-      "quote": "Prospective home buyers, your next big opportunity is here."
-    }
-  ],
-  "per_item": []
-}
-```'''
-    try:
-        demo_parsed = parse_nova_json_output(demo_raw)
-        if SA_DEBUG:
-            print("[SA demo] parse_nova_json_output =>", json.dumps(demo_parsed, indent=2))
-    except Exception as e:
-        if SA_DEBUG:
-            print("[SA demo] failed to parse demo:", e)
-
-    print(sent)

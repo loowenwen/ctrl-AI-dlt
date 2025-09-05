@@ -26,7 +26,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN")  
 
 AWS_REGION = "us-east-1"
-BEDROCK_MODEL_ID = "arn:aws:bedrock:us-east-1:371061166839:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+BEDROCK_MODEL_ID = os.getenv("CLAUDE_35")
 
 session = boto3.Session(
     aws_access_key_id=AWS_ACCESS_KEY_ID,

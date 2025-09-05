@@ -19,18 +19,13 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-NOVA_PRO_MODEL_ID = os.environ.get("NOVA_MODEL", "amazon.nova-pro-v1:0")
-WS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+NOVA_PRO_MODEL_ID = os.environ.get("CLAUDE_35")
+WS_DEFAULT_REGION = "us-east-1"
 
-# Optional: Use an inference profile if on-demand isn't supported
-INFERENCE_PROFILE_ARN = os.getenv("NOVA_PRO_INFERENCE_PROFILE_ARN") or os.getenv("NOVA_INFERENCE_PROFILE_ARN")
-if INFERENCE_PROFILE_ARN:
-    logger.info("Using Bedrock Inference Profile: %s", INFERENCE_PROFILE_ARN)
-logger.info("Bedrock region=%s model_id=%s", WS_DEFAULT_REGION, NOVA_PRO_MODEL_ID)
 
 session = boto3.Session(region_name=WS_DEFAULT_REGION)
 
-# Some BedrockModel versions accept inference_profile_arn; if not, it will be ignored safely
+
 model = BedrockModel(
     model_id=NOVA_PRO_MODEL_ID,
     max_tokens=1024,
@@ -39,12 +34,13 @@ model = BedrockModel(
         connect_timeout=120,
         retries=dict(max_attempts=3, mode="adaptive"),
     ),
-    boto_session=session,
-    inference_profile_arn=INFERENCE_PROFILE_ARN if INFERENCE_PROFILE_ARN else None,
+    boto_session=session
 )
 
 SYSTEM_PROMPT = """
 If the website or url link you received is a tiktok discovery page (a link that contains 'tiktok' and 'discover' in it), use the tool [process_tiktok_discover] to scrape the website for 10 video urls (insert 10 into limit)
+and return the results in JSON format. Return only the JSON and nothing else.
+Make sure that the URLS are ALL INCLUDED
 """
 
 UA = (
@@ -345,14 +341,14 @@ webscrape_discover=Agent(
     callback_handler=PrintingCallbackHandler(),
 )
 
-# Example usage
-if __name__ == "__main__":
-    # Example: Scrape TikTok discover page
-    # result = process_tiktok_discover(
-    #     url="https://www.tiktok.com/discover/july-bto-launch-toa-payoh",
-    #     limit=10,
-    #     include_page=True
-    # )
-    # print(json.dumps(result, indent=2, ensure_ascii=False))
-    url="https://www.tiktok.com/discover/july-bto-launch-toa-payoh"
-    webscrape_discover(url)
+# # Example usage
+# if __name__ == "__main__":
+#     # Example: Scrape TikTok discover page
+#     # result = process_tiktok_discover(
+#     #     url="https://www.tiktok.com/discover/july-bto-launch-toa-payoh",
+#     #     limit=10,
+#     #     include_page=True
+#     # )
+#     # print(json.dumps(result, indent=2, ensure_ascii=False))
+#     url="https://www.tiktok.com/discover/july-bto-launch-toa-payoh"
+#     webscrape_discover(url)

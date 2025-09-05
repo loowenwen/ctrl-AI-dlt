@@ -1,31 +1,36 @@
-#!/usr/bin/env bash
-set -euo pipefail
-ROOT="$(cd "$(dirname "$0")" && pwd)"
+#!/bin/bash
+set -e
 
-build_zip () {
-  MODPATH="$1"        # directory containing code
-  OUTNAME="$2"        # output zip name
-  shift 2
-  FILES=("$@")        # files to include
+echo "🚀 Building Sentiment Analysis Lambda package..."
 
-  pushd "$ROOT/$MODPATH" >/dev/null
-  rm -rf dist build && mkdir -p dist build
+# Create build directory
+BUILD_DIR="build"
+rm -rf $BUILD_DIR dist
+mkdir -p $BUILD_DIR
 
-  # If there's a requirements.txt, vendor deps into build/
-  if [[ -f requirements.txt && -s requirements.txt ]]; then
-    pip install --upgrade -r requirements.txt -t build
-  fi
+# Install dependencies
+echo "📦 Installing dependencies..."
+pip install -r requirements.txt -t $BUILD_DIR
 
-  # copy files
-  for f in "${FILES[@]}"; do cp "$f" build/; done
+# Copy lambda code
+echo "📄 Copying lambda function code..."
+cp sentiment_final.py $BUILD_DIR/
+cp lambda_handler.py $BUILD_DIR/
+cp query_builder.py $BUILD_DIR/
+cp websearch.py $BUILD_DIR/
+cp video_ingestion.py $BUILD_DIR/
+cp tiktok_discovery.py $BUILD_DIR/
+cp text_content.py $BUILD_DIR/
+cp sentiment_agent.py $BUILD_DIR/
 
-  (cd build && zip -qr "../dist/$OUTNAME" .)
-  echo "Built $ROOT/$MODPATH/dist/$OUTNAME"
-  popd >/dev/null
-}
+# Create deployment package
+echo "🗜️  Creating deployment package..."
+cd $BUILD_DIR
+zip -r ../dist/sentiment_lambda.zip .
+cd ..
 
-# 1) Web aggregator (light zip)
-build_zip "search" "websearch_lambda.zip" "websearch_lambda.py" 
+# Cleanup
+echo "🧹 Cleaning up..."
+rm -rf $BUILD_DIR
 
-# 2) Router (light zip) - router_lambda.py is in current folder
-build_zip "." "router_lambda.zip" "router_lambda.py" 
+echo "✅ Done! Deployment package created: dist/sentiment_lambda.zip"

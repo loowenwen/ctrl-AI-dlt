@@ -27,13 +27,10 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-NOVA_PRO_MODEL_ID = os.environ.get("NOVA_MODEL", "amazon.nova-pro-v1:0")
-WS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+NOVA_PRO_MODEL_ID = os.environ.get("CLAUDE_35")
+WS_DEFAULT_REGION = "us-east-1"
 
-# Optional: Use an inference profile if on-demand isn't supported
-INFERENCE_PROFILE_ARN = os.getenv("NOVA_PRO_INFERENCE_PROFILE_ARN") or os.getenv("NOVA_INFERENCE_PROFILE_ARN")
-if INFERENCE_PROFILE_ARN:
-    logger.info("Using Bedrock Inference Profile: %s", INFERENCE_PROFILE_ARN)
+
 logger.info("Bedrock region=%s model_id=%s", WS_DEFAULT_REGION, NOVA_PRO_MODEL_ID)
 
 session = boto3.Session(region_name=WS_DEFAULT_REGION)
@@ -47,13 +44,13 @@ model = BedrockModel(
         connect_timeout=120,
         retries=dict(max_attempts=3, mode="adaptive"),
     ),
-    boto_session=session,
-    inference_profile_arn=INFERENCE_PROFILE_ARN if INFERENCE_PROFILE_ARN else None,
+    boto_session=session
 )
 
 SYSTEM_PROMPT = (
     "Based on your inserted query, determine if we are websearching for a normal google search query or a url. If it is a normal google query, insert the query into 'topic' parameters in [process_websearch] tool." \
     "Else, insert the url into 'url' parameters in [process_websearch] tool."
+    "Return the search results in the form of summarizing text content and ALL URLS (text, videos, tiktok, youtube, etc) "
 )
 
 # ---- Config ----
@@ -396,9 +393,9 @@ websearch_agent=Agent(
     callback_handler=PrintingCallbackHandler(),
 )
 
-# Example usage
-if __name__ == "__main__":
-    # Example: Search by topic
-    result = websearch_agent("HDB BTO Toa Payoh July 2025 4-room flat reviews, MRT access, school proximity, resale value sentiment on TikTok and YouTube")
+# # Example usage
+# if __name__ == "__main__":
+#     # Example: Search by topic
+#     result = websearch_agent("HDB BTO Toa Payoh July 2025 4-room flat reviews, MRT access, school proximity, resale value sentiment on TikTok and YouTube")
     
-    result2=websearch_agent("https://www.tiktok.com/discover/july-bto-launch-toa-payoh")
+#     result2=websearch_agent("https://www.tiktok.com/discover/july-bto-launch-toa-payoh")

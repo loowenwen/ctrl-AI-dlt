@@ -29,7 +29,7 @@ AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
 AWS_SESSION_TOKEN = os.getenv("AWS_SESSION_TOKEN")  
 
 AWS_REGION = "us-east-1"
-BEDROCK_MODEL_ID = "arn:aws:bedrock:us-east-1:371061166839:inference-profile/us.anthropic.claude-3-5-sonnet-20241022-v2:0"
+BEDROCK_MODEL_ID = os.getenv("CLAUDE_35")
 
 session = boto3.Session(
     aws_access_key_id=AWS_ACCESS_KEY_ID,
@@ -80,10 +80,11 @@ topic={
         "concerns": ["MRT", "schools", "resale value"],
         }
 
-prompt="Tell me about how people feel about Toa Payoh July 2025 HDB BTO launch"
-result = graph(str(topic))
+# prompt="Tell me about how people feel about Toa Payoh July 2025 HDB BTO launch"
+# result = graph(str(topic))
 
-# Access the results
-print(f"\nStatus: {result.status}")
-print(f"Execution order: {[node.node_id for node in result.execution_order]}")
+# # Access the results
+# print(f"\nStatus: {result.status}")
+# print(f"Execution order: {[node.node_id for node in result.execution_order]}")
 
+# print(f"final answer: {result.results["sentiment"].result}")

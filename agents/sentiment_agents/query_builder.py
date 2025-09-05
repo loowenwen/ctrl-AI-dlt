@@ -18,13 +18,9 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-NOVA_PRO_MODEL_ID = os.environ.get("NOVA_MODEL", "amazon.nova-pro-v1:0")
-WS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+NOVA_PRO_MODEL_ID = os.environ.get("CLAUDE_35", "amazon.nova-pro-v1:0")
+WS_DEFAULT_REGION = "us-east-1"
 
-# Optional: Use an inference profile if on-demand isn't supported
-INFERENCE_PROFILE_ARN = os.getenv("NOVA_PRO_INFERENCE_PROFILE_ARN") or os.getenv("NOVA_INFERENCE_PROFILE_ARN")
-if INFERENCE_PROFILE_ARN:
-    logger.info("Using Bedrock Inference Profile: %s", INFERENCE_PROFILE_ARN)
 logger.info("Bedrock region=%s model_id=%s", WS_DEFAULT_REGION, NOVA_PRO_MODEL_ID)
 
 session = boto3.Session(region_name=WS_DEFAULT_REGION)
@@ -38,8 +34,7 @@ model = BedrockModel(
         connect_timeout=120,
         retries=dict(max_attempts=3, mode="adaptive"),
     ),
-    boto_session=session,
-    inference_profile_arn=INFERENCE_PROFILE_ARN if INFERENCE_PROFILE_ARN else None,
+    boto_session=session
 )
 
 SYSTEM_PROMPT = """
@@ -63,20 +58,20 @@ logger.info("Query builder agent initialized (region=%s, model=%s)", WS_DEFAULT_
 
 
 
-if __name__ == "__main__":
-    topic={
-            "age": 29,
-            "flat_type": "4-room",
-            "location": "Toa Payoh",
-            "intent": "HDB BTO July 2025 launch sentiment",
-            "focus": ["TikTok", "YouTube", "reviews", "guides", "explainers"],
-            "concerns": ["MRT", "schools", "resale value"],
-        }
+# if __name__ == "__main__":
+#     topic={
+#             "age": 29,
+#             "flat_type": "4-room",
+#             "location": "Toa Payoh",
+#             "intent": "HDB BTO July 2025 launch sentiment",
+#             "focus": ["TikTok", "YouTube", "reviews", "guides", "explainers"],
+#             "concerns": ["MRT", "schools", "resale value"],
+#         }
     
     
-    #from params
-    resp = query_agent(str(topic))
+#     #from params
+#     resp = query_agent(str(topic))
 
-    #from direct prompt
+#     #from direct prompt
 
-    #resp1 = query_agent("What are the reviews, guides, and explainers on TikTok and YouTube about the sentiment for the HDB BTO July 2025 launch of 4-room flats in Toa Payoh, focusing on MRT accessibility, nearby schools, and resale value?")
+#     #resp1 = query_agent("What are the reviews, guides, and explainers on TikTok and YouTube about the sentiment for the HDB BTO July 2025 launch of 4-room flats in Toa Payoh, focusing on MRT accessibility, nearby schools, and resale value?")

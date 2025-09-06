@@ -25,13 +25,10 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-NOVA_PRO_MODEL_ID = os.environ.get("NOVA_MODEL", "amazon.nova-pro-v1:0")
-WS_DEFAULT_REGION = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+NOVA_PRO_MODEL_ID = os.environ.get("CLAUDE_35")
+WS_DEFAULT_REGION = "us-east-1"
 
-# Optional: Use an inference profile if on-demand isn't supported
-INFERENCE_PROFILE_ARN = os.getenv("NOVA_PRO_INFERENCE_PROFILE_ARN") or os.getenv("NOVA_INFERENCE_PROFILE_ARN")
-if INFERENCE_PROFILE_ARN:
-    logger.info("Using Bedrock Inference Profile: %s", INFERENCE_PROFILE_ARN)
+
 logger.info("Bedrock region=%s model_id=%s", WS_DEFAULT_REGION, NOVA_PRO_MODEL_ID)
 
 session = boto3.Session(region_name=WS_DEFAULT_REGION)
@@ -45,12 +42,12 @@ model = BedrockModel(
         connect_timeout=120,
         retries=dict(max_attempts=3, mode="adaptive"),
     ),
-    boto_session=session,
-    inference_profile_arn=INFERENCE_PROFILE_ARN if INFERENCE_PROFILE_ARN else None,
+    boto_session=session
 )
 
 SYSTEM_PROMPT = (
     "Use the tool [download_video_transcribe] to get the video transcript for the given urls. Dont download more than 10."
+    "Then, based on the transcript, provide a concise summary of the video content, focusing on key points and overall sentiment."
 )
 
 def _run(cmd: str):
@@ -198,5 +195,5 @@ transcript_understanding=Agent(
     callback_handler=PrintingCallbackHandler(),
 )
 
-if __name__ == "__main__":
-    transcript_understanding("https://www.tiktok.com/@happynesshomessg/video/7539758751616650503")
+# if __name__ == "__main__":
+#     transcript_understanding("https://www.tiktok.com/@happynesshomessg/video/7539758751616650503")

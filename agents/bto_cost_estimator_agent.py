@@ -383,9 +383,14 @@ class EnhancedBTOCostEstimator:
 
 
 def interactive_estimator(csv_path: Optional[str] = None):
-    """interactive command-line interface for the estimator"""
+    """interactive command-line interface for the estimator
+    """
     if not csv_path:
-        csv_path = "bto_pricing_detail_cleaned.csv"
+        # resolve repo root from this file (agents/ -> repo root)
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        default_new = os.path.join(repo_root, "data", "bto_pricing_detail_cleaned.csv")
+        default_old = os.path.join(repo_root, "bto_pricing_detail_cleaned.csv")
+        csv_path = default_new if os.path.exists(default_new) else default_old
     
     try:
         estimator = EnhancedBTOCostEstimator(csv_path)

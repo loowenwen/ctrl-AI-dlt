@@ -8,6 +8,7 @@ from pathlib import Path
 # Reuse budget computation helpers
 from agents.bto_budget_estimator import compute_total_budget
 from agents.bto_cost_estimator_agent import run_estimates_for_selection
+from agents.bto_affordability_agent import assess_estimates_with_budget
 
 app = FastAPI()
 
@@ -268,3 +269,54 @@ def cost_estimates(req: BatchEstimateRequest):
         raise HTTPException(status_code=500, detail=f"Pricing dataset not found: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to compute estimates: {e}")
+
+
+# -------------------------------
+# Affordability from estimates endpoint
+# -------------------------------
+
+
+class AffordabilityFromEstimatesRequest(BaseModel):
+    total_budget: Optional[float] = None
+    session_id: Optional[str] = None
+    estimates: Dict[str, EstimateResult]
+
+
+class AffordabilityExplanation(BaseModel):
+    affordability_status: str
+    shortfall: Optional[float] = None
+    margin_vs_estimate: Optional[float] = None
+    confidence: Optional[str] = None
+    explanation: Optional[str] = None
+
+
+class AffordabilityFromEstimatesResponse(BaseModel):
+    total_budget: float
+    results: Dict[str, AffordabilityExplanation]
+
+
+@app.post("/affordability_from_estimates", response_model=AffordabilityFromEstimatesResponse)
+def affordability_from_estimates(req: AffordabilityFromEstimatesRequest):
+    # Resolve total budget from request or session store
+    budget: Optional[float] = req.total_budget
+    if budget is None and req.session_id:
+        stored = BUDGET_STORE.get(req.session_id)
+        if stored:
+            budget = float(stored.get("total_budget", 0.0))
+    if budget is None:
+        raise HTTPException(status_code=400, detail="Provide total_budget or a valid session_id")
+
+    try:
+        # Convert Pydantic EstimateResult objects to plain dicts (Pydantic v1/v2 compatible)
+        est_dict: Dict[str, Dict[str, Any]] = {}
+        for k, v in req.estimates.items():
+            if hasattr(v, "model_dump"):
+                est_dict[k] = v.model_dump()
+            elif hasattr(v, "dict"):
+                est_dict[k] = v.dict()
+            else:
+                est_dict[k] = v  # already a dict
+        assessed = assess_estimates_with_budget(budget, est_dict)
+        return AffordabilityFromEstimatesResponse(total_budget=round(budget, 2), results=assessed)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to assess affordability: {e}")

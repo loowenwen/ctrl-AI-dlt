@@ -7,6 +7,7 @@ import "leaflet/dist/leaflet.css";
 export default function BTOEstimators() {
   const [budgetOutput, setBudgetOutput] = useState("");
   const [isBudgetLoading, setIsBudgetLoading] = useState(false);
+  const [latestBudgetTotal, setLatestBudgetTotal] = useState(null);
   const [affordabilityOutput, setAffordabilityOutput] = useState("Affordability check will use the agent soon.");
   const [btoListings, setBtoListings] = useState([]);
   const [isLoadingListings, setIsLoadingListings] = useState(false);
@@ -17,6 +18,8 @@ export default function BTOEstimators() {
   const [selectedExerciseDate, setSelectedExerciseDate] = useState("October 2025");
   const [isEstimating, setIsEstimating] = useState(false);
   const [estimateResults, setEstimateResults] = useState({});
+  const [isAssessing, setIsAssessing] = useState(false);
+  const [affordabilityResults, setAffordabilityResults] = useState({});
 
   // Unique flat types from concatenated strings like "2-Room Flexi, 3-Room, 4-Room"
   const flatTypeOptions = useMemo(() => {
@@ -73,6 +76,7 @@ export default function BTOEstimators() {
         });
 
         const { max_hdb_loan, total_budget, cpf_used_in_budget, retained_oa } = budgetResp.data || {};
+        setLatestBudgetTotal(total_budget ?? null);
 
         setBudgetOutput(
           [
@@ -198,17 +202,63 @@ export default function BTOEstimators() {
       alert("No selections found. Please select BTOs and click 'Save Selection' first.");
       return;
     }
+    // Helper to chunk requests to avoid overloading backend/agent
+    const entries = Object.entries(selections);
+    const chunkSize = 3; // adjust as needed
+    const sleep = (ms) => new Promise((res) => setTimeout(res, ms));
+
     try {
       setIsEstimating(true);
-      const resp = await axios.post(`${API_BASE}/cost_estimates`, { selections });
-      const results = resp?.data?.results || {};
-      setEstimateResults(results);
-      try { localStorage.setItem("bto_cost_estimates", JSON.stringify(results)); } catch (_) {}
+      let aggregate = {};
+      for (let i = 0; i < entries.length; i += chunkSize) {
+        const slice = entries.slice(i, i + chunkSize);
+        const sliceDict = Object.fromEntries(slice);
+        const resp = await axios.post(`${API_BASE}/cost_estimates`, { selections: sliceDict });
+        const results = resp?.data?.results || {};
+        aggregate = { ...aggregate, ...results };
+        setEstimateResults((prev) => ({ ...prev, ...results }));
+        // Respectful pause between batches to avoid overloading upstream agents
+        if (i + chunkSize < entries.length) {
+          await sleep(2000); // 2 seconds between batches
+        }
+      }
+      try { localStorage.setItem("bto_cost_estimates", JSON.stringify(aggregate)); } catch (_) {}
     } catch (err) {
       const message = err?.response?.data?.detail || err?.message || String(err);
       alert(`Failed to fetch estimates: ${message}`);
     } finally {
       setIsEstimating(false);
+    }
+  };
+
+  const checkAffordability = async () => {
+    const API_BASE = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+    const estimates = estimateResults && Object.keys(estimateResults).length
+      ? estimateResults
+      : JSON.parse(localStorage.getItem("bto_cost_estimates") || "{}");
+    if (!estimates || Object.keys(estimates).length === 0) {
+      alert("No estimates available. Click 'Get Estimates' first.");
+      return;
+    }
+    const budget = latestBudgetTotal ?? null;
+    if (budget == null) {
+      alert("No budget found. Compute your budget in the Budget section first.");
+      return;
+    }
+    try {
+      setIsAssessing(true);
+      const resp = await axios.post(`${API_BASE}/affordability_from_estimates`, {
+        total_budget: budget,
+        estimates,
+      });
+      const results = resp?.data?.results || {};
+      setAffordabilityResults(results);
+      try { localStorage.setItem("bto_affordability_results", JSON.stringify(results)); } catch (_) {}
+    } catch (err) {
+      const message = err?.response?.data?.detail || err?.message || String(err);
+      alert(`Failed to assess affordability: ${message}`);
+    } finally {
+      setIsAssessing(false);
     }
   };
 
@@ -415,20 +465,48 @@ export default function BTOEstimators() {
 
           <div className="divider" />
 
-          {/* Bottom half: Affordability (placeholder) */}
-          <h3 className="section-title">2) Affordability (coming soon)</h3>
-          <form onSubmit={handleAffordability} className="form">
-            <div className="input-row">
-              <div className="input-group">
-                <label className="label" htmlFor="price">Target BTO Price</label>
-                <input id="price" name="price" type="number" inputMode="decimal" placeholder="e.g., 520000" className="input" required />
-              </div>
-            </div>
-            <div className="actions">
-              <button type="submit" className="button primary">Preview Affordability</button>
-            </div>
-          </form>
-          <pre className="output" aria-live="polite">{affordabilityOutput}</pre>
+          {/* Bottom half: Affordability using saved estimates */}
+          <h3 className="section-title">2) Affordability</h3>
+          <div className="help">Uses your computed total budget and the estimates above.</div>
+          <div className="actions">
+            <button className="button primary" onClick={checkAffordability} disabled={isAssessing}>
+              {isAssessing ? <span className="spinner" aria-hidden /> : null}
+              {isAssessing ? "Assessing..." : "Check Affordability"}
+            </button>
+          </div>
+          <div className="output" aria-live="polite">
+            {Object.keys(affordabilityResults || {}).length === 0 ? (
+              <div>No affordability analysis yet. Compute budget, get estimates, then click "Check Affordability".</div>
+            ) : (
+              <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+                {Object.entries(affordabilityResults).map(([key, r]) => {
+                  const selectionsLS = (() => {
+                    try { return JSON.parse(localStorage.getItem("selected_btos_by_project") || "{}"); } catch (_) { return {}; }
+                  })();
+                  const est = estimateResults[key] || {};
+                  const sel = savedByProject[key] || selectionsLS[key] || {};
+                  const town = est.projectLocation || sel.town || "Unknown";
+                  const flat = est.flatType || sel.flatType || "";
+                  const date = est.exerciseDate || sel.exerciseDate || "";
+                  return (
+                    <li key={key} style={{ marginBottom: 12 }}>
+                      <div style={{ fontWeight: 700 }}>{town}{flat ? ` — ${flat}` : ""}</div>
+                      {date ? (<div style={{ fontSize: '0.9em', color: '#a7b1c2' }}>Exercise date: {date}</div>) : null}
+                      <div style={{ marginTop: 6, fontWeight: 600 }}>{r.affordability_status}</div>
+                      {r.shortfall != null && r.shortfall > 0 ? (
+                        <div style={{ color: '#f29f97' }}>Shortfall: ${Number(r.shortfall).toLocaleString()}</div>
+                      ) : null}
+                      {r.margin_vs_estimate != null ? (
+                        <div>Margin vs estimate: ${Number(r.margin_vs_estimate).toLocaleString()}</div>
+                      ) : null}
+                      <div style={{ fontSize: '0.9em', color: '#a7b1c2' }}>Confidence: {r.confidence || 'unknown'}</div>
+                      <div style={{ marginTop: 6 }}>{r.explanation}</div>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
         </div>
 
         {/* Map card removed — now a full-width hero above */}

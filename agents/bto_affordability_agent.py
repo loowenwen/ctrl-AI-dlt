@@ -69,6 +69,88 @@ def assess_bto_list(total_budget: float, btos: list):
     return results
 
 # -------------------------------
+# new: affordability against estimate dict with CI
+# -------------------------------
+
+def assess_estimate_item(total_budget: float, item: dict) -> dict:
+    """assess affordability for one estimate entry with CI
+
+    item is expected to contain keys: estimatedPrice, ciLower, ciUpper, projectLocation, flatType.
+    all numeric fields are optional and handled gracefully.
+    """
+    est = item.get("estimatedPrice")
+    lo = item.get("ciLower")
+    hi = item.get("ciUpper")
+    # compute primary status vs estimated price
+    primary = assess_bto_affordability(total_budget, float(est) if est is not None else float('inf'))
+    margin = None if est is None else round(total_budget - float(est), 2)
+    # confidence narrative using CI
+    confidence = "unknown"
+    if lo is not None and hi is not None:
+        if total_budget >= hi:
+            confidence = "likely_affordable"
+        elif total_budget < lo:
+            confidence = "likely_unaffordable"
+        else:
+            confidence = "borderline"
+    elif lo is not None:
+        confidence = "likely_affordable" if total_budget >= lo else "likely_unaffordable"
+    elif hi is not None:
+        confidence = "likely_affordable" if total_budget >= hi else "borderline"
+
+    # build explanation string
+    def fmt(x):
+        try:
+            return f"${float(x):,.0f}"
+        except Exception:
+            return "N/A"
+
+    parts = []
+    parts.append(f"Budget {fmt(total_budget)} vs estimate {fmt(est)}.")
+    if lo is not None or hi is not None:
+        parts.append(f"95% CI: {fmt(lo)} - {fmt(hi)}.")
+    if confidence == "likely_affordable":
+        parts.append("Your budget exceeds the upper bound, suggesting comfortable affordability.")
+    elif confidence == "likely_unaffordable":
+        parts.append("Your budget is below the lower bound; affordability is unlikely.")
+    elif confidence == "borderline":
+        parts.append("Your budget intersects the CI; outcome is uncertain and depends on final pricing.")
+    else:
+        parts.append("Unable to assess confidence due to missing CI.")
+
+    # compose result
+    result = {
+        "affordability_status": primary["affordability_status"],
+        "shortfall": primary.get("shortfall", 0.0),
+        "margin_vs_estimate": margin,
+        "confidence": confidence,
+        "explanation": " ".join(parts),
+    }
+    return result
+
+
+def assess_estimates_with_budget(total_budget: float, estimates: dict) -> dict:
+    """assess all items in a results dict from cost estimator.
+
+    estimates: { id: { projectLocation, flatType, estimatedPrice, ciLower, ciUpper, ... } }
+    returns: { id: { affordability_status, shortfall, margin_vs_estimate, confidence, explanation } }
+    """
+    output = {}
+    for key, item in (estimates or {}).items():
+        try:
+            output[key] = assess_estimate_item(total_budget, item)
+        except Exception as e:
+            logger.warning(f"Affordability assessment failed for id={key}: {e}")
+            output[key] = {
+                "affordability_status": "error",
+                "shortfall": None,
+                "margin_vs_estimate": None,
+                "confidence": "unknown",
+                "explanation": "Unable to assess due to error.",
+            }
+    return output
+
+# -------------------------------
 # strands tool: hdb loan + budget
 # -------------------------------
 @tool

@@ -56,12 +56,15 @@ class BudgetRequest(BaseModel):
     cpf_savings: float = Field(..., description="CPF OA savings available")
     annual_rate: float = Field(0.03, description="Annual interest rate")
     tenure_years: int = Field(25, description="Loan tenure in years")
+    retain_oa_amount: float = Field(20000.0, description="CPF OA to retain as buffer")
     session_id: Optional[str] = Field(None, description="Optional key to store budget server-side")
 
 
 class BudgetResponse(BaseModel):
     max_hdb_loan: float
     total_budget: float
+    cpf_used_in_budget: Optional[float] = None
+    retained_oa: Optional[float] = None
     session_id: Optional[str] = None
 
 
@@ -74,6 +77,7 @@ def calculate_budget(req: BudgetRequest):
             cpf_savings=req.cpf_savings,
             annual_rate=req.annual_rate,
             tenure_years=req.tenure_years,
+            retain_oa_amount=req.retain_oa_amount,
         )
         if req.session_id:
             BUDGET_STORE[req.session_id] = result

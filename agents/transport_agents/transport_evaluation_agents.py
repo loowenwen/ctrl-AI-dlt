@@ -1,29 +1,10 @@
 import os
 import json
 import requests
-import subprocess
-import sys
 from datetime import datetime
 from typing import Dict, List, Optional
 import boto3
 from dotenv import load_dotenv
-from fastapi import FastAPI
-from fastapi.responses import StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
-
-
-##run BTO launch data script
-try:
-    subprocess.run(
-        [sys.executable, "/Users/mv/agenticai_hackathon/ctrl-AI-dlt/agents/transport_agents/bto_launch_websearch_agent.py", "--headless"],
-        check=True
-    )
-    print("✅ Successfully updated BTO data before starting service.")
-except subprocess.CalledProcessError as e:
-    print(f"⚠️ Failed to run bto_launch_websearch_agent.py: {e}")
-except FileNotFoundError:
-    print("⚠️ bto_launch_websearch_agent.py not found. Make sure the file exists at the specified path.")
-
 
 class Config:
     """Configuration for OneMap API and BTO data settings."""
@@ -248,11 +229,10 @@ class BTOTransportAnalyzer:
         self.config = config
         self.service = BTOTransportService(config)
 
-    def create_single_bto_agent_stream(self) -> callable:
-        """Create streaming AI agent for single BTO transport analysis using boto3."""
+    def create_single_bto_agent(self) -> callable:
+        """Create AI agent for single BTO transport analysis using boto3."""
         client = boto3.client("bedrock-runtime", region_name="us-east-1")
-        system_prompt = """You are a Singapore public transport specialist focusing ONLY on transport accessibility
-and connectivity for a single BTO location.
+        system_prompt = """You are a Singapore public transport specialist focusing ONLY on transport accessibility and connectivity for a single BTO location.
 
 Your expertise is LIMITED to:
 - Public transport journey times
@@ -269,9 +249,8 @@ DO NOT consider:
 - Any non-transport factors
 
 Provide a detailed description of the transport route details, connectivity, and accessibility based purely on public transport efficiency for this single location."""
-        
-        def stream_invoke(prompt: str):
-            response = client.invoke_model_with_response_stream(
+        def invoke(prompt: str) -> str:
+            response = client.invoke_model(
                 modelId="anthropic.claude-3-5-sonnet-20240620-v1:0",
                 body=json.dumps({
                     "anthropic_version": "bedrock-2023-05-31",
@@ -281,48 +260,66 @@ Provide a detailed description of the transport route details, connectivity, and
                     "messages": [{"role": "user", "content": prompt}]
                 })
             )
-            for event in response["body"]:
-                if "chunk" in event:
-                    chunk = json.loads(event["chunk"]["bytes"])
-                    if "delta" in chunk and "text" in chunk["delta"]:
-                        yield chunk["delta"]["text"]
+            return json.loads(response["body"].read())["content"][0]["text"]
+        return invoke
 
-        return stream_invoke
+    def create_comparison_agent(self) -> callable:
+        """Create AI agent for comparing multiple BTO transport analyses using boto3."""
+        client = boto3.client("bedrock-runtime", region_name="us-east-1")
+        system_prompt = """You are a Singapore public transport specialist focusing ONLY on transport accessibility.
 
-# ================== FASTAPI APP ==================
+Your expertise is LIMITED to:
+- Public transport journey times
+- Walking distances to transport nodes
+- Transfer complexity and frequency
+- Transport mode availability and variety
+- Peak vs off-peak transport performance
 
-app = FastAPI()
+DO NOT consider:
+- Price, affordability, or value
+- Neighborhood amenities or lifestyle
+- School quality or family factors
+- Future development potential
+- Any non-transport factors
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # adjust for your frontend domain
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+Provide a relative ranking of the provided BTO locations based purely on public transport efficiency and accessibility."""
+        def invoke(prompt: str) -> str:
+            response = client.invoke_model(
+                modelId="anthropic.claude-3-5-sonnet-20240620-v1:0",
+                body=json.dumps({
+                    "anthropic_version": "bedrock-2023-05-31",
+                    "max_tokens": 1000,
+                    "temperature": 0.7,
+                    "system": system_prompt,
+                    "messages": [{"role": "user", "content": prompt}]
+                })
+            )
+            return json.loads(response["body"].read())["content"][0]["text"]
+        return invoke
 
-@app.get("/analyze_bto_stream")
-def analyze_bto_stream(name: str, postal_code: str, time_period: str):
-    config = Config()
-    analyzer = BTOTransportAnalyzer(config)
+    def analyze_single_bto(self, name: str, postal_code: str, time_period: str) -> Dict[str, str]:
+        """Analyze transport accessibility for a single BTO by name."""
+        if not (postal_code.isdigit() and len(postal_code) == 6):
+            return {"error": "Postal code must be a 6-digit number"}
+        if time_period not in self.config.time_periods:
+            return {"error": f"Invalid time period: {time_period}. Choose from {list(self.config.time_periods.keys())}"}
+        
+        btos = self.service.get_bto_by_name(name)
+        if not btos:
+            return {"error": f"BTO with name '{name}' not found"}
+        if len(btos) > 1:
+            return {"error": f"Multiple BTOs found for '{name}'. Please specify lat and lon."}
+        
+        bto = btos[0]
+        transport_data = self.service.get_transport_data(bto["lat"], bto["lon"], postal_code, time_period)
+        if "error" in transport_data:
+            return {"error": transport_data["error"]}
 
-    # ===== Validate Input and Load BTO =====
-    btos = analyzer.service.get_bto_by_name(name)
-    if not btos:
-        return {"error": f"BTO '{name}' not found"}
-    if len(btos) > 1:
-        return {"error": f"Multiple BTOs found for '{name}', specify lat/lon"}
+        formatted_data = self.service.format_route_data(transport_data, bto["name"], bto.get("flatType", "N/A"))
+        self.service.save_comparison_data(formatted_data)
 
-    bto = btos[0]
-    transport_data = analyzer.service.get_transport_data(bto["lat"], bto["lon"], postal_code, time_period)
-    if "error" in transport_data:
-        return transport_data
-
-    formatted_data = analyzer.service.format_route_data(transport_data, bto["name"], bto.get("flatType", "N/A"))
-    destination_address = formatted_data["destination"].get("address", postal_code)
-
-    # ===== Build Prompt for Streaming =====
-    analysis_prompt = f"""
+        destination_address = formatted_data["destination"].get("address", postal_code)
+        analysis_prompt = f"""
 You are a Singapore public transport specialist analyzing BTO commuting accessibility.
 
 TASK: Analyze transport accessibility for {bto['name']} (Flat: {bto.get('flatType', 'N/A')}) commuting to {destination_address} during {time_period}.
@@ -330,30 +327,171 @@ TASK: Analyze transport accessibility for {bto['name']} (Flat: {bto.get('flatTyp
 Transport Data:
 {json.dumps(formatted_data, indent=2)}
 
-Return ONLY a valid JSON object with the structure:
+Return ONLY a valid JSON object with this structure:
+
 {{
-  "daily_commute": {{"summary": "string", "total_time_minutes": number, "feeling": "string"}},
-  "key_details": {{
-      "journey_time": "string",
-      "starting_point": {{"station_code": "string", "station_name": "string", "walking_distance_meters": number, "walking_time_minutes": number, "accessibility_note": "string"}},
-      "transfers": {{"count": number, "complexity": "string", "frequency": "string"}},
-      "transport_options": {{"modes": ["string"], "reliability": "string", "backup_routes": boolean}}
-  }},
-  "pros_and_cons": {{"pros": ["string"], "cons": ["string"]}},
-  "decision_tip": "string"
+    "daily_commute": {{
+        "summary": "string",
+        "total_time_minutes": number,
+        "feeling": "string"
+    }},
+    "key_details": {{
+        "journey_time": "string",
+        "starting_point": {{
+            "station_code": "string",
+            "station_name": "string", 
+            "walking_distance_meters": number,
+            "walking_time_minutes": number,
+            "accessibility_note": "string"
+        }},
+        "transfers": {{
+            "count": number,
+            "complexity": "string",
+            "frequency": "string"
+        }},
+        "transport_options": {{
+            "modes": ["string"],
+            "reliability": "string",
+            "backup_routes": boolean
+        }}
+    }},
+    "pros_and_cons": {{
+        "pros": ["string"],
+        "cons": ["string"]
+    }},
+    "decision_tip": "string"
 }}
 
 Focus ONLY on transport factors. Use actual data from the transport information provided.
 """
-
-    # ===== Streaming Generator =====
-    agent = analyzer.create_single_bto_agent_stream()
-    def event_generator():
         try:
-            for chunk in agent(analysis_prompt):
-                yield f"data: {chunk}\n\n"
+            agent = self.create_single_bto_agent()
+            analysis = agent(analysis_prompt)
+            
+            # Parse JSON response
+            try:
+                parsed_analysis = json.loads(analysis)
+                return {"result": parsed_analysis}
+            except json.JSONDecodeError:
+                # If JSON parsing fails, return the raw text as fallback
+                return {"result": analysis, "format": "text", "note": "JSON parsing failed, returning raw text"}
+                
         except Exception as e:
-            yield f"data: ERROR: {str(e)}\n\n"
+            return {"error": f"AI analysis failed: {str(e)}"}
 
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+    def compare_btos(self, destination_address: str, time_period: str) -> Dict[str, str]:
+        """Compare transport accessibility across multiple BTOs."""
+        if time_period not in self.config.time_periods:
+            return {"error": f"Invalid time period: {time_period}. Choose from {list(self.config.time_periods.keys())}"}
+        all_transport_data = self.service.load_comparison_data()
+        if not all_transport_data:
+            return {"error": "No transport data available for comparison"}
+        analysis_prompt = f"""
+You are a Singapore public transport specialist analyzing BTO locations for commuting accessibility.
 
+TASK: Rank these {len(all_transport_data)} BTO locations from BEST to WORST for commuting to {destination_address} during {time_period}.
+
+Transport Data:
+{json.dumps(all_transport_data, indent=2)}
+
+RANKING CRITERIA (in order of importance):
+1. Total Journey Time - Shorter is better
+2. Walking Distance to First Transport - Shorter walks are more convenient  
+3. Number of Transfers - Fewer transfers = less complexity
+4. Transport Mode Variety - More options = better reliability
+5. Peak Hour Performance - How well it handles rush hour
+
+Return ONLY a valid JSON object with this structure:
+
+{{
+    "ranking": [
+        {{
+            "rank": number,
+            "bto_name": "string",
+            "flat_types": "string"
+        }}
+    ],
+    "winner_analysis": {{
+        "bto_name": "string",
+        "advantages": {{
+            "journey_time": {{
+                "minutes": number,
+                "vs_others": [number],
+                "advantage": "string"
+            }},
+            "starting_point": {{
+                "station_code": "string",
+                "station_name": "string",
+                "walking_distance_meters": number,
+                "walking_time_minutes": number,
+                "advantage": "string"
+            }},
+            "transfers": {{
+                "count": number,
+                "vs_others": [number],
+                "advantage": "string"
+            }},
+            "transport_options": {{
+                "modes": ["string"],
+                "reliability": "string",
+                "backup_routes": boolean,
+                "advantage": "string"
+            }},
+            "peak_performance": "string"
+        }},
+        "key_differentiator": "string"
+    }},
+    "comparison_table": [
+        {{
+            "bto_name": "string",
+            "total_time_minutes": number,
+            "walking_time_minutes": number,
+            "transfers": number,
+            "best_route": "string",
+        }}
+    ],
+    "summary": {{ 
+        "overall_assessment": "string" (This overall assessment should be detailed, informative and 3 lines long)
+    }}
+}}
+
+Focus ONLY on transport factors. Use actual data from the transport information provided.
+"""
+        try:
+            agent = self.create_comparison_agent()
+            analysis = agent(analysis_prompt)
+            return {"result": analysis}
+        except Exception as e:
+            return {"error": f"AI analysis failed: {str(e)}"}
+
+    def clear_comparison_data(self) -> None:
+        """Clear the comparison data file."""
+        try:
+            if os.path.exists(self.config.comparison_data_file):
+                os.remove(self.config.comparison_data_file)
+        except Exception as e:
+            raise ValueError(f"Failed to clear comparison data: {str(e)}")
+
+def get_bto_locations() -> List[dict]:
+    """Load BTO locations for external use."""
+    config = Config()
+    service = BTOTransportService(config)
+    return service.load_bto_locations()
+
+def analyze_bto_transport(name: str, postal_code: str, time_period: str) -> Dict[str, str]:
+    """Analyze transport for a single BTO location by name."""
+    config = Config()
+    analyzer = BTOTransportAnalyzer(config)
+    return analyzer.analyze_single_bto(name, postal_code, time_period)
+
+def compare_bto_transports(destination_address: str, time_period: str) -> Dict[str, str]:
+    """Compare transport accessibility for multiple BTOs."""
+    config = Config()
+    analyzer = BTOTransportAnalyzer(config)
+    return analyzer.compare_btos(destination_address, time_period)
+
+def clear_comparison_data() -> None:
+    """Clear stored comparison data."""
+    config = Config()
+    analyzer = BTOTransportAnalyzer(config)
+    analyzer.clear_comparison_data()

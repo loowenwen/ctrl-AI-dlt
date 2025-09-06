@@ -1,0 +1,171 @@
+[{
+    "coordinates": "[1.3772299, 103.8525171]",
+    "properties": {
+        "listingType": "BTO",
+        "description": [{
+            "maxRemainingLease": "99",
+            "stage": "Upcoming",
+            "town": "Ang Mo Kio",
+            "distance": "-1",
+            "launchStartDate": "2025-07-23 10:00:00.0",
+            "ballotQtr": "2025-10",
+            "flatType": "2-Room Flexi, 3-Room, 4-Room",
+            "projectId": "2025-07_UPB_QU1LX044QzM4Ql8xNzUxNTk1OTM1ODg1"
+        }],
+        "hdbCategory": "1",
+        "region": "NORTH-EAST REGION"
+    }
+}, {
+    "coordinates": "[1.3274674, 103.9204426]",
+    "properties": {
+        "listingType": "BTO",
+        "description": [{
+            "maxRemainingLease": "99",
+            "stage": "Upcoming",
+            "town": "Bedok",
+            "distance": "-1",
+            "launchStartDate": "2025-07-23 10:00:00.0",
+            "ballotQtr": "2025-10",
+            "flatType": "2-Room Flexi, 3-Room, 4-Room, 5-Room, 3Gen",
+            "projectId": "2025-07_UPB_QkRfTjhDMTVfMTc1MTU5NjA0NjUzMQ"
+        }],
+        "hdbCategory": "1",
+        "region": "EAST REGION"
+    }
+}, {
+    "coordinates": "[1.3459337, 103.8493744]",
+    "properties": {
+        "listingType": "BTO",
+        "description": [{
+            "maxRemainingLease": "99",
+            "stage": "Upcoming",
+            "town": "Bishan",
+            "distance": "-1",
+            "launchStartDate": "2025-07-23 10:00:00.0",
+            "ballotQtr": "2025-10",
+            "flatType": "2-Room Flexi, 3-Room, 4-Room",
+            "projectId": "2025-07_UPB_QkhfTjFDMzdfMTc1MTU5NjE1ODA5Mw"
+        }],
+        "hdbCategory": "1",
+        "region": "CENTRAL REGION"
+    }
+}, {
+    "coordinates": "[1.270142, 103.807832]",
+    "properties": {
+        "listingType": "BTO",
+        "description": [{
+            "maxRemainingLease": "99",
+            "stage": "Upcoming",
+            "town": "Bukit Merah",
+            "distance": "-1",
+            "launchStartDate": "2025-07-23 10:00:00.0",
+            "ballotQtr": "2025-10",
+            "flatType": "2-Room Flexi, 3-Room, 4-Room",
+            "projectId": "2025-07_UPB_Qk1fTjlDMV8xNzUxNTk2NDA5NjYz"
+        }],
+        "hdbCategory": "1",
+        "region": "CENTRAL REGION"
+    }
+}, {
+    "coordinates": "[1.2849007, 103.8173038]",
+    "properties": {
+        "listingType": "BTO",
+        "description": [{
+            "maxRemainingLease": "99",
+            "stage": "Upcoming",
+            "town": "Bukit Merah",
+            "distance": "-1",
+            "launchStartDate": "2025-07-23 10:00:00.0",
+            "ballotQtr": "2025-10",
+            "flatType": "2-Room Flexi, 4-Room",
+            "projectId": "2025-07_UPB_Qk1fTjZDNzNfMTc1MTU5NjI5MTQxNg"
+        }],
+        "hdbCategory": "1",
+        "region": "CENTRAL REGION"
+    }
+}, {
+    "coordinates": "[1.3199078, 103.7439121]",
+    "properties": {
+        "listingType": "BTO",
+        "description": [{
+            "maxRemainingLease": "99",
+            "stage": "Upcoming",
+            "town": "Jurong East",
+            "distance": "-1",
+            "launchStartDate": "2025-07-23 10:00:00.0",
+            "ballotQtr": "2025-10",
+            "flatType": "2-Room Flexi, 3-Room, 4-Room, 5-Room, 3Gen",
+            "projectId": "2025-07_UPB_SkVfTjRDMTdfMTc1MTU5NjUyODI3NQ"
+        }],
+        "hdbCategory": "1",
+        "region": "WEST REGION"
+    }
+}, {
+    "coordinates": "[1.3988599, 103.8798495]",
+    "properties": {
+        "listingType": "BTO",
+        "description": [{
+            "maxRemainingLease": "99",
+            "stage": "Upcoming",
+            "town": "Sengkang",
+            "distance": "-1",
+            "launchStartDate": "2025-07-23 10:00:00.0",
+            "ballotQtr": "2025-10",
+            "flatType": "Community Care Apartment, 2-Room Flexi, 4-Room, 5-Room",
+            "projectId": "2025-07_UPB_U0tfTjRDNDdfMTc1MTU5NjY0Nzg2MQ"
+        }],
+        "hdbCategory": "1",
+        "region": "NORTH-EAST REGION"
+    }
+}, {
+    "coordinates": "[1.330322, 103.8382658]",
+    "properties": {
+        "listingType": "BTO",
+        "description": [{
+            "maxRemainingLease": "99",
+            "stage": "Upcoming",
+            "town": "Toa Payoh",
+            "distance": "-1",
+            "launchStartDate": "2025-07-23 10:00:00.0",
+            "ballotQtr": "2025-10",
+            "flatType": "2-Room Flexi, 3-Room, 4-Room",
+            "projectId": "2025-07_UPB_VFBfTjEwQzFfMTc1MTU5Njc2NjQzMQ"
+        }],
+        "hdbCategory": "1",
+        "region": "CENTRAL REGION"
+    }
+}, {
+    "coordinates": "[1.417931, 103.8287255]",
+    "properties": {
+        "listingType": "BTO",
+        "description": [{
+            "maxRemainingLease": "99",
+            "stage": "Upcoming",
+            "town": "Yishun",
+            "distance": "-1",
+            "launchStartDate": "2025-07-23 10:00:00.0",
+            "ballotQtr": "2025-10",
+            "flatType": "2-Room Flexi, 3-Room, 4-Room, 5-Room",
+            "projectId": "2025-07_UPB_WVNfTjhDMjFfMTc1MTU5NzAxMDk5MQ"
+        }],
+        "hdbCategory": "1",
+        "region": "NORTH REGION"
+    }
+}, {
+    "coordinates": "[1.4308217, 103.845352]",
+    "properties": {
+        "listingType": "BTO",
+        "description": [{
+            "maxRemainingLease": "99",
+            "stage": "Upcoming",
+            "town": "Yishun",
+            "distance": "-1",
+            "launchStartDate": "2025-07-23 10:00:00.0",
+            "ballotQtr": "2025-10",
+            "flatType": "2-Room Flexi, 4-Room",
+            "projectId": "2025-07_UPB_WVNfTjNDMjhfMTc1MTU5Njg5OTY2Mg"
+        }],
+        "hdbCategory": "1",
+        "region": "NORTH REGION"
+    }
+}]

@@ -6,6 +6,11 @@ import boto3
 from strands import Agent, tool
 from strands.handlers.callback_handler import PrintingCallbackHandler
 from strands.models.bedrock import BedrockModel
+from .bto_budget_estimator import (
+    max_hdb_loan_from_income,
+    total_hdb_budget,
+    compute_total_budget,
+)
 
 # -------------------------------
 # load environment variables
@@ -31,20 +36,37 @@ logging.basicConfig(
 )
 
 # -------------------------------
-# financial calculation helpers
+# affordability helpers (using budget estimator)
 # -------------------------------
-def max_hdb_loan_from_income(income, annual_rate=0.03, years=25):
-    """compute max HDB loan based on monthly household income"""
-    monthly_payment = 0.3 * income  # 30% of household income
-    r = annual_rate / 12.0
-    N = years * 12
-    factor = (1 + r)**N
-    loan = monthly_payment * (factor - 1) / (r * factor)
-    return round(loan, 2)
+def assess_bto_affordability(total_budget: float, bto_price: float):
+    """Assess affordability for a single BTO price against total budget."""
+    if total_budget >= bto_price:
+        return {
+            "affordability_status": "Affordable",
+            "shortfall": 0.0,
+        }
+    shortfall = round(bto_price - total_budget, 2)
+    return {
+        "affordability_status": f"Shortfall: ${shortfall:,.2f}",
+        "shortfall": shortfall,
+    }
 
-def total_hdb_budget(cash_savings, cpf_savings, max_loan):
-    """total available budget including cash + CPF + loan"""
-    return round(cash_savings + cpf_savings + max_loan, 2)
+def assess_bto_list(total_budget: float, btos: list):
+    """Assess a list of BTOs where each item has {name, price}.
+
+    Returns a list of {name, price, affordability_status, shortfall}.
+    """
+    results = []
+    for item in btos:
+        name = item.get("name")
+        price = float(item.get("price", 0))
+        res = assess_bto_affordability(total_budget, price)
+        results.append({
+            "name": name,
+            "price": price,
+            **res,
+        })
+    return results
 
 # -------------------------------
 # strands tool: hdb loan + budget
@@ -63,19 +85,35 @@ def estimate_hdb_loan_with_budget(
     
     returns max loan, total budget, and affordability status
     """
-    max_loan = max_hdb_loan_from_income(household_income, annual_rate, tenure_years)
-    total_budget = total_hdb_budget(cash_savings, cpf_savings, max_loan)
-    
-    if total_budget >= bto_price:
-        status = "Affordable"
-    else:
-        shortfall = bto_price - total_budget
-        status = f"Shortfall: ${shortfall:,.2f}"
+    comp = compute_total_budget(
+        household_income=household_income,
+        cash_savings=cash_savings,
+        cpf_savings=cpf_savings,
+        annual_rate=annual_rate,
+        tenure_years=tenure_years,
+    )
+    max_loan = comp["max_hdb_loan"]
+    total_budget = comp["total_budget"]
+    status_info = assess_bto_affordability(total_budget, bto_price)
+    status = status_info["affordability_status"]
     
     return {
         "max_hdb_loan": max_loan,
         "total_budget": total_budget,
         "affordability_status": status
+    }
+
+@tool
+def assess_affordability_with_budget(
+    total_budget: float,
+    bto_price: float,
+):
+    """Assess affordability given a pre-computed total budget and a BTO price."""
+    info = assess_bto_affordability(total_budget, bto_price)
+    return {
+        "total_budget": round(total_budget, 2),
+        "bto_price": round(bto_price, 2),
+        **info,
     }
 
 # -------------------------------
@@ -115,7 +153,7 @@ You can:
 loan_agent = Agent(
     model=model,
     system_prompt=SYSTEM_PROMPT,
-    tools=[estimate_hdb_loan_with_budget],
+    tools=[estimate_hdb_loan_with_budget, assess_affordability_with_budget],
     callback_handler=PrintingCallbackHandler()
 )
 

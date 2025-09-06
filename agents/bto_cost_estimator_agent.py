@@ -361,6 +361,82 @@ class EnhancedBTOCostEstimator:
         )
         return estimate
 
+    # -------------------------------
+    # batch API for frontend selections
+    # -------------------------------
+
+    @staticmethod
+    def _parse_exercise_date_label(value: str) -> str:
+        """convert labels like 'October 2025' to ISO 'YYYY-MM-DD' (first day of month)
+        if already ISO-like, return as-is; fallback to 2025-10-01 if unknown.
+        """
+        if not value:
+            return "2025-10-01"
+        val = str(value).strip()
+        # pass through if already yyyy-mm-dd
+        try:
+            datetime.strptime(val, "%Y-%m-%d")
+            return val
+        except Exception:
+            pass
+        # try month label: 'October 2025'
+        try:
+            dt = datetime.strptime(val, "%B %Y")
+            return dt.replace(day=1).strftime("%Y-%m-%d")
+        except Exception:
+            return "2025-10-01"
+
+    def estimate_from_selection_dict(
+        self,
+        selections: Dict[str, Dict[str, str]],
+    ) -> Dict[str, Dict[str, Optional[float]]]:
+        """run estimates for a dict keyed by project id → { town, flatType, exerciseDate }.
+
+        returns a dict keyed by the same id with an enriched result payload.
+        """
+        results: Dict[str, Dict[str, Optional[float]]] = {}
+        for key, payload in (selections or {}).items():
+            town = (payload.get("town") or payload.get("project_location") or "").strip()
+            flat_type = (payload.get("flatType") or payload.get("flat_type") or "").strip()
+            exercise_label = payload.get("exerciseDate") or payload.get("exercise_date") or "October 2025"
+            exercise_iso = self._parse_exercise_date_label(exercise_label)
+
+            try:
+                est = self.estimate_cost(
+                    project_location=town,
+                    flat_type=flat_type,
+                    exercise_date=exercise_iso,
+                )
+                results[key] = {
+                    "projectLocation": est.project_location,
+                    "flatType": est.flat_type,
+                    "exerciseDate": exercise_label,
+                    "exerciseDateISO": exercise_iso,
+                    "projectTier": est.project_tier,
+                    "estimatedPrice": float(est.estimated_price) if est.estimated_price is not None else None,
+                    "ciLower": float(est.confidence_interval[0]) if est.confidence_interval[0] is not None else None,
+                    "ciUpper": float(est.confidence_interval[1]) if est.confidence_interval[1] is not None else None,
+                    "sampleSize": int(est.sample_size),
+                    "trend": est.historical_trend,
+                    "methodology": est.methodology,
+                }
+            except Exception as e:
+                logger.error(f"Estimate failed for key={key} town={town} flat_type={flat_type}: {e}", exc_info=False)
+                results[key] = {
+                    "projectLocation": town,
+                    "flatType": flat_type,
+                    "exerciseDate": exercise_label,
+                    "exerciseDateISO": exercise_iso,
+                    "projectTier": None,
+                    "estimatedPrice": None,
+                    "ciLower": None,
+                    "ciUpper": None,
+                    "sampleSize": 0,
+                    "trend": "error",
+                    "methodology": "unavailable",
+                }
+        return results
+
     
     def batch_estimate(
         self,
@@ -383,9 +459,14 @@ class EnhancedBTOCostEstimator:
 
 
 def interactive_estimator(csv_path: Optional[str] = None):
-    """interactive command-line interface for the estimator"""
+    """interactive command-line interface for the estimator
+    """
     if not csv_path:
-        csv_path = "bto_pricing_detail_cleaned.csv"
+        # resolve repo root from this file (agents/ -> repo root)
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        default_new = os.path.join(repo_root, "data", "bto_pricing_detail_cleaned.csv")
+        default_old = os.path.join(repo_root, "bto_pricing_detail_cleaned.csv")
+        csv_path = default_new if os.path.exists(default_new) else default_old
     
     try:
         estimator = EnhancedBTOCostEstimator(csv_path)
@@ -437,6 +518,25 @@ def interactive_estimator(csv_path: Optional[str] = None):
     except Exception as e:
         print(f"Failed to initialize estimator: {str(e)}")
         logger.error(f"Initialization error: {str(e)}", exc_info=True)
+
+
+def run_estimates_for_selection(
+    selections: Dict[str, Dict[str, str]],
+    csv_path: Optional[str] = None,
+) -> Dict[str, Dict[str, Optional[float]]]:
+    """convenience entrypoint: given selections dict from the frontend, return results dict.
+
+    selections: { id: { town, flatType, exerciseDate } }
+    returns: { id: { projectLocation, flatType, exerciseDate, exerciseDateISO, projectTier, estimatedPrice, ciLower, ciUpper, sampleSize, trend, methodology } }
+    """
+    if not csv_path:
+        repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        default_new = os.path.join(repo_root, "data", "bto_pricing_detail_cleaned.csv")
+        default_old = os.path.join(repo_root, "bto_pricing_detail_cleaned.csv")
+        csv_path = default_new if os.path.exists(default_new) else default_old
+
+    est = EnhancedBTOCostEstimator(csv_path)
+    return est.estimate_from_selection_dict(selections)
 
 
 if __name__ == "__main__":

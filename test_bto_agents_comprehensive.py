@@ -5,6 +5,7 @@ Comprehensive test script for both single BTO analysis and comparison analysis
 import sys
 import time
 import os
+import asyncio
 sys.path.append('agents/transport_agents')
 
 from transport_evaluation_agents import (
@@ -14,6 +15,63 @@ from transport_evaluation_agents import (
     BTOTransportAnalyzer,
     Config
 )
+import bto_launch_websearch_agent
+
+def test_bto_websearch():
+    """Test BTO web search agent to fetch fresh BTO data"""
+    print("=" * 70)
+    print("TESTING BTO WEB SEARCH AGENT")
+    print("=" * 70)
+    
+    print("🌐 Fetching fresh BTO data from HDB website...")
+    print("This will scrape the latest BTO locations and update bto_data.json")
+    
+    try:
+        # Run the web search agent
+        async def run_websearch():
+            await bto_launch_websearch_agent.run(
+                url="https://homes.hdb.gov.sg/home/finding-a-flat",
+                headless=True,
+                verbose=False,
+                pretty=False,
+                csv_path=None,
+                by_name=True,
+                coords_only=False
+            )
+            return True
+        
+        # Run the async function
+        result = asyncio.run(run_websearch())
+        
+        if result:
+            print("✅ BTO web search completed successfully!")
+            
+            # Check if bto_data.json was updated
+            if os.path.exists("bto_data.json"):
+                with open("bto_data.json", "r", encoding="utf-8") as f:
+                    import json
+                    bto_data = json.load(f)
+                    print(f"📊 Found {len(bto_data)} BTO locations in updated data")
+                    
+                    # Show a few examples
+                    print("📋 Sample BTO locations:")
+                    for i, bto in enumerate(bto_data[:3], 1):
+                        print(f"   {i}. {bto.get('name', 'Unknown')} - {bto.get('flatType', 'N/A')}")
+                    
+                    if len(bto_data) > 3:
+                        print(f"   ... and {len(bto_data) - 3} more")
+                
+                return True
+            else:
+                print("⚠️  bto_data.json not found after web search")
+                return False
+        else:
+            print("❌ BTO web search failed")
+            return False
+            
+    except Exception as e:
+        print(f"❌ BTO web search error: {e}")
+        return False
 
 def test_single_bto_analysis():
     """Test single BTO analysis and store data for comparison - INTERACTIVE MODE"""
@@ -281,6 +339,13 @@ def main():
     else:
         print("✅ Environment variables are set")
     
+    # Run BTO web search first
+    print(f"\n🌐 STEP 1: Fetching fresh BTO data...")
+    websearch_success = test_bto_websearch()
+    
+    if not websearch_success:
+        print("⚠️  BTO web search failed, but continuing with existing data...")
+    
     single_analyses = 0
     comparison_success = False
     
@@ -289,6 +354,7 @@ def main():
         print(f"MAIN MENU - BTO AGENTS TEST SUITE")
         print(f"="*70)
         print(f"Current Status:")
+        print(f"  • BTO Web Search: {'✅ PASS' if websearch_success else '❌ FAIL'}")
         print(f"  • Single BTO Analyses: {single_analyses} successful")
         print(f"  • Comparison Analysis: {'✅ PASS' if comparison_success else '❌ FAIL'}")
         print(f"")
@@ -296,11 +362,12 @@ def main():
         print(f"  1. Single BTO Analysis (Interactive)")
         print(f"  2. Comparison Analysis (Interactive)")
         print(f"  3. Edge Case Testing")
-        print(f"  4. View Current Status")
+        print(f"  4. Re-run BTO Web Search")
+        print(f"  5. View Current Status")
         print(f"  q. Quit")
         
         try:
-            choice = input(f"\n🎯 Choose a test to run (1-4 or q): ").strip()
+            choice = input(f"\n🎯 Choose a test to run (1-5 or q): ").strip()
             
             if choice.lower() == 'q':
                 print("👋 Exiting test suite...")
@@ -316,8 +383,16 @@ def main():
                 test_edge_cases()
                 print(f"\n✅ Edge case testing completed!")
             elif choice == '4':
+                print(f"\n🌐 Re-running BTO Web Search...")
+                websearch_success = test_bto_websearch()
+                if websearch_success:
+                    print("✅ BTO web search completed successfully!")
+                else:
+                    print("❌ BTO web search failed")
+            elif choice == '5':
                 print(f"\n📊 CURRENT STATUS")
                 print(f"="*30)
+                print(f"BTO Web Search: {'✅ PASS' if websearch_success else '❌ FAIL'}")
                 print(f"Single BTO Analyses: {single_analyses} successful")
                 print(f"Comparison Analysis: {'✅ PASS' if comparison_success else '❌ FAIL'}")
                 
@@ -332,7 +407,7 @@ def main():
                     for i, data in enumerate(comparison_data, 1):
                         print(f"  {i}. {data.get('bto_name', 'Unknown')} ({data.get('flat_type', 'N/A')})")
             else:
-                print("❌ Invalid choice. Please enter 1-4 or q.")
+                print("❌ Invalid choice. Please enter 1-5 or q.")
                 
         except KeyboardInterrupt:
             print(f"\n\n👋 Interrupted by user. Exiting...")
@@ -344,14 +419,17 @@ def main():
     print(f"\n" + "="*70)
     print(f"FINAL TEST SUMMARY")
     print(f"="*70)
+    print(f"BTO Web Search: {'✅ PASS' if websearch_success else '❌ FAIL'}")
     print(f"Single BTO Analyses: {single_analyses} successful")
     print(f"Comparison Analysis: {'✅ PASS' if comparison_success else '❌ FAIL'}")
     print(f"Edge Case Testing: ✅ COMPLETED")
     
-    if single_analyses >= 2 and comparison_success:
+    if websearch_success and single_analyses >= 2 and comparison_success:
         print(f"\n🎉 ALL TESTS PASSED! Your BTO agents are working perfectly!")
+    elif websearch_success and single_analyses >= 1:
+        print(f"\n✅ BTO web search and single analysis work! Comparison may need more data.")
     elif single_analyses >= 1:
-        print(f"\n✅ Single BTO analysis works! Comparison may need more data.")
+        print(f"\n✅ Single BTO analysis works! Web search may have failed.")
     else:
         print(f"\n⚠️  Some issues detected. Check error messages above.")
     
@@ -359,6 +437,7 @@ def main():
     print(f"- If you see ThrottlingException errors, wait 5-10 minutes before retrying")
     print(f"- Make sure your .env file has valid OneMap credentials")
     print(f"- Ensure AWS credentials are configured for Bedrock access")
+    print(f"- BTO web search fetches fresh data from HDB website")
     print(f"- You can run this script multiple times to test different scenarios")
 
 if __name__ == "__main__":

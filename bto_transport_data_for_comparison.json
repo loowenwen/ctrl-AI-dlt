@@ -28,8 +28,8 @@
         ],
         "route_numbers": [
           "CE",
-          "159",
-          "NS"
+          "NS",
+          "159"
         ],
         "first_transport_mode": "BUS",
         "stop_sequence": [
@@ -58,9 +58,9 @@
           "SUBWAY"
         ],
         "route_numbers": [
-          "CE",
+          "72",
           "NS",
-          "72"
+          "CE"
         ],
         "first_transport_mode": "BUS",
         "stop_sequence": [
@@ -89,9 +89,9 @@
           "SUBWAY"
         ],
         "route_numbers": [
-          "50",
+          "NS",
           "CE",
-          "NS"
+          "50"
         ],
         "first_transport_mode": "BUS",
         "stop_sequence": [
@@ -128,8 +128,8 @@
       ],
       "route_numbers": [
         "CE",
-        "159",
-        "NS"
+        "NS",
+        "159"
       ],
       "first_transport_mode": "BUS",
       "stop_sequence": [
@@ -143,149 +143,6 @@
         "code": "54359",
         "line": null,
         "walk_time_min": 12.8
-      }
-    }
-  },
-  {
-    "bto_name": "Bedok",
-    "flat_type": "2-Room Flexi, 3-Room, 4-Room, 5-Room, 3Gen",
-    "bto_location": {
-      "lat": 1.327467,
-      "lon": 103.920443
-    },
-    "destination": {
-      "lat": 1.28239713771706,
-      "lon": 103.85840539166,
-      "address": "10 BAYFRONT AVENUE SANDS EXPO AND CONVENTION CENTRE SINGAPORE 018956",
-      "postal_code": "018956"
-    },
-    "time_period": "Morning Peak",
-    "available_routes": [
-      {
-        "route_number": 1,
-        "total_duration_minutes": 43.1,
-        "walking_time_minutes": 11.8,
-        "transit_time_minutes": 25.2,
-        "waiting_time_minutes": 6.2,
-        "transfers": 2,
-        "walk_distance_meters": 752.87,
-        "transport_modes": [
-          "BUS",
-          "SUBWAY"
-        ],
-        "route_numbers": [
-          "DT",
-          "EW",
-          "222"
-        ],
-        "first_transport_mode": "BUS",
-        "stop_sequence": [
-          "Origin",
-          "84569",
-          "84579",
-          "84589",
-          "84011",
-          "84021",
-          "Destination"
-        ],
-        "mrt_lines": [],
-        "starting_stop": {
-          "code": "84569",
-          "line": null,
-          "walk_time_min": 11.8
-        }
-      },
-      {
-        "route_number": 2,
-        "total_duration_minutes": 44.2,
-        "walking_time_minutes": 16.6,
-        "transit_time_minutes": 25.5,
-        "waiting_time_minutes": 2.1,
-        "transfers": 1,
-        "walk_distance_meters": 1108.68,
-        "transport_modes": [
-          "BUS",
-          "SUBWAY"
-        ],
-        "route_numbers": [
-          "137",
-          "DT"
-        ],
-        "first_transport_mode": "BUS",
-        "stop_sequence": [
-          "Origin",
-          "84369",
-          "Destination"
-        ],
-        "mrt_lines": [],
-        "starting_stop": {
-          "code": "84369",
-          "line": null,
-          "walk_time_min": 16.6
-        }
-      },
-      {
-        "route_number": 3,
-        "total_duration_minutes": 44.9,
-        "walking_time_minutes": 16.6,
-        "transit_time_minutes": 25.5,
-        "waiting_time_minutes": 2.7,
-        "transfers": 1,
-        "walk_distance_meters": 1108.68,
-        "transport_modes": [
-          "BUS",
-          "SUBWAY"
-        ],
-        "route_numbers": [
-          "DT",
-          "87"
-        ],
-        "first_transport_mode": "BUS",
-        "stop_sequence": [
-          "Origin",
-          "84369",
-          "Destination"
-        ],
-        "mrt_lines": [],
-        "starting_stop": {
-          "code": "84369",
-          "line": null,
-          "walk_time_min": 16.6
-        }
-      }
-    ],
-    "best_route": {
-      "route_number": 1,
-      "total_duration_minutes": 43.1,
-      "walking_time_minutes": 11.8,
-      "transit_time_minutes": 25.2,
-      "waiting_time_minutes": 6.2,
-      "transfers": 2,
-      "walk_distance_meters": 752.87,
-      "transport_modes": [
-        "BUS",
-        "SUBWAY"
-      ],
-      "route_numbers": [
-        "DT",
-        "EW",
-        "222"
-      ],
-      "first_transport_mode": "BUS",
-      "stop_sequence": [
-        "Origin",
-        "84569",
-        "84579",
-        "84589",
-        "84011",
-        "84021",
-        "Destination"
-      ],
-      "mrt_lines": [],
-      "starting_stop": {
-        "code": "84569",
-        "line": null,
-        "walk_time_min": 11.8
       }
     }
   }

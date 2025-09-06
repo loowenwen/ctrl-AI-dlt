@@ -7,6 +7,7 @@ from pathlib import Path
 
 # Reuse budget computation helpers
 from agents.bto_budget_estimator import compute_total_budget
+from agents.bto_cost_estimator_agent import run_estimates_for_selection
 
 app = FastAPI()
 
@@ -212,3 +213,58 @@ def get_bto_listings():
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to load listings: {e}")
+
+
+# -------------------------------
+# Cost estimates endpoint (batch)
+# -------------------------------
+
+
+class BTOSelectionItem(BaseModel):
+    town: Optional[str] = None
+    flatType: Optional[str] = None
+    exerciseDate: Optional[str] = None
+
+
+class BatchEstimateRequest(BaseModel):
+    selections: Dict[str, BTOSelectionItem]
+
+
+class EstimateResult(BaseModel):
+    projectLocation: Optional[str] = None
+    flatType: Optional[str] = None
+    exerciseDate: Optional[str] = None
+    exerciseDateISO: Optional[str] = None
+    projectTier: Optional[str] = None
+    estimatedPrice: Optional[float] = None
+    ciLower: Optional[float] = None
+    ciUpper: Optional[float] = None
+    sampleSize: Optional[int] = 0
+    trend: Optional[str] = None
+    methodology: Optional[str] = None
+
+
+class BatchEstimateResponse(BaseModel):
+    results: Dict[str, EstimateResult]
+
+
+@app.post("/cost_estimates", response_model=BatchEstimateResponse)
+def cost_estimates(req: BatchEstimateRequest):
+    try:
+        # Convert selections into plain dict for the agent
+        sel_dict: Dict[str, Dict[str, Any]] = {
+            key: {
+                "town": (val.town or ""),
+                "flatType": (val.flatType or ""),
+                "exerciseDate": (val.exerciseDate or "October 2025"),
+            }
+            for key, val in (req.selections or {}).items()
+        }
+        results = run_estimates_for_selection(sel_dict)
+        # Pydantic will coerce dict of dicts into BatchEstimateResponse
+        return BatchEstimateResponse(results=results)
+    except FileNotFoundError as e:
+        # Likely missing pricing CSV; surface a helpful error
+        raise HTTPException(status_code=500, detail=f"Pricing dataset not found: {e}")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to compute estimates: {e}")

@@ -12,8 +12,11 @@ export default function BTOEstimators() {
   const [isLoadingListings, setIsLoadingListings] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [savedByTown, setSavedByTown] = useState({});
+  const [savedByProject, setSavedByProject] = useState({});
   const [selectedFlatType, setSelectedFlatType] = useState("");
   const [selectedExerciseDate, setSelectedExerciseDate] = useState("October 2025");
+  const [isEstimating, setIsEstimating] = useState(false);
+  const [estimateResults, setEstimateResults] = useState({});
 
   // Unique flat types from concatenated strings like "2-Room Flexi, 3-Room, 4-Room"
   const flatTypeOptions = useMemo(() => {
@@ -143,7 +146,8 @@ export default function BTOEstimators() {
       const key = item.town || "Unknown";
       const minimal = {
         projectId: item.projectId,
-        flatType: item.flatType,
+        flatType: selectedFlatType || item.flatType,
+        exerciseDate: selectedExerciseDate,
         lat: item.lat,
         lng: item.lng,
         region: item.region,
@@ -154,13 +158,58 @@ export default function BTOEstimators() {
       map[key].push(minimal);
     }
     return map;
-  }, [btoListings, selectedIds]);
+  }, [btoListings, selectedIds, selectedFlatType, selectedExerciseDate]);
 
   const saveSelection = () => {
+    // Persist grouped-by-town structure
     setSavedByTown(selectedByTown);
+
+    // Also build a dictionary keyed by project id (or fallback key)
+    const byProject = {};
+    for (const item of btoListings) {
+      const key = item.projectId || `${item.town}-${item.lat}-${item.lng}`;
+      if (!selectedIds.has(key)) continue;
+      byProject[key] = {
+        town: item.town || "",
+        flatType: selectedFlatType || item.flatType || "",
+        exerciseDate: selectedExerciseDate,
+      };
+    }
+    setSavedByProject(byProject);
+
     try {
       localStorage.setItem("selected_btos_by_town", JSON.stringify(selectedByTown));
+      localStorage.setItem("selected_btos_by_project", JSON.stringify(byProject));
     } catch (_) {}
+  };
+
+  const getEstimates = async () => {
+    const API_BASE = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+    // Prefer in-memory selection; fall back to localStorage
+    let selections = savedByProject;
+    if (!selections || Object.keys(selections).length === 0) {
+      try {
+        selections = JSON.parse(localStorage.getItem("selected_btos_by_project") || "{}") || {};
+      } catch (_) {
+        selections = {};
+      }
+    }
+    if (!selections || Object.keys(selections).length === 0) {
+      alert("No selections found. Please select BTOs and click 'Save Selection' first.");
+      return;
+    }
+    try {
+      setIsEstimating(true);
+      const resp = await axios.post(`${API_BASE}/cost_estimates`, { selections });
+      const results = resp?.data?.results || {};
+      setEstimateResults(results);
+      try { localStorage.setItem("bto_cost_estimates", JSON.stringify(results)); } catch (_) {}
+    } catch (err) {
+      const message = err?.response?.data?.detail || err?.message || String(err);
+      alert(`Failed to fetch estimates: ${message}`);
+    } finally {
+      setIsEstimating(false);
+    }
   };
 
   const mapCenter = useMemo(() => {
@@ -286,8 +335,43 @@ export default function BTOEstimators() {
           </div>
           <div className="actions">
             <button className="button success" onClick={saveSelection}>Save Selection</button>
+            <button className="button primary" onClick={getEstimates} disabled={isEstimating}>
+              {isEstimating ? <span className="spinner" aria-hidden /> : null}
+              {isEstimating ? "Estimating..." : "Get Estimates"}
+            </button>
           </div>
-          <pre className="output" aria-live="polite">{Object.keys(savedByTown).length ? JSON.stringify(savedByTown, null, 2) : "Saved selection (dictionary) will appear here."}</pre>
+          <pre className="output" aria-live="polite">{Object.keys(savedByProject).length ? JSON.stringify(savedByProject, null, 2) : "Saved selection (dictionary keyed by project) will appear here."}</pre>
+
+          <div className="divider" />
+          <h3 className="section-title">Estimates (by selection)</h3>
+          <div className="output" aria-live="polite">
+            {Object.keys(estimateResults || {}).length === 0 ? (
+              <div>No estimates yet. Click "Get Estimates" above.</div>
+            ) : (
+              <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+                {Object.entries(estimateResults).map(([key, r]) => (
+                  <li key={key} style={{ marginBottom: 10 }}>
+                    <div style={{ fontWeight: 700 }}>{r.projectLocation} — {r.flatType}</div>
+                    <div style={{ fontSize: '0.9em', color: '#a7b1c2' }}>Date: {r.exerciseDate} ({r.exerciseDateISO}) • Tier: {r.projectTier || 'N/A'} • Sample: {r.sampleSize ?? 0}</div>
+                    <div>
+                      {r.estimatedPrice != null ? (
+                        <>
+                          <span>Est: ${Number(r.estimatedPrice).toLocaleString()}</span>
+                          {r.ciLower != null && r.ciUpper != null ? (
+                            <span style={{ marginLeft: 8 }}>CI: ${Number(r.ciLower).toLocaleString()} - ${Number(r.ciUpper).toLocaleString()}</span>
+                          ) : null}
+                          <span style={{ marginLeft: 8, color: '#7aa2f7' }}>{r.trend}</span>
+                          <span style={{ marginLeft: 8, color: '#7aa2f7' }}>{r.methodology}</span>
+                        </>
+                      ) : (
+                        <span style={{ color: '#f29f97' }}>No estimate (insufficient data)</span>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         {/* BTO Budget Estimator - split into two */}

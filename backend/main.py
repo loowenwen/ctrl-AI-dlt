@@ -2,6 +2,8 @@ from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 from fastapi.middleware.cors import CORSMiddleware
 from typing import List, Optional, Dict, Any
+import json
+from pathlib import Path
 
 # Reuse budget computation helpers
 from agents.bto_budget_estimator import compute_total_budget
@@ -138,3 +140,75 @@ def check_affordability(req: AffordabilityRequest):
         ))
 
     return AffordabilityResponse(total_budget=round(budget, 2), results=results)
+
+
+# -------------------------------
+# BTO listings endpoint (for mapping)
+# -------------------------------
+
+
+class BTOListing(BaseModel):
+    lat: float
+    lng: float
+    town: str
+    flatType: str
+    projectId: Optional[str] = None
+    region: Optional[str] = None
+    listingType: Optional[str] = None
+    stage: Optional[str] = None
+    ballotQtr: Optional[str] = None
+
+
+def _load_bto_json() -> List[Dict[str, Any]]:
+    """load raw BTO data file from data directory."""
+    data_path = Path(__file__).resolve().parent.parent / "data" / "oct25_bto.json"
+    if not data_path.exists():
+        raise FileNotFoundError(f"Cannot find data file: {data_path}")
+    with data_path.open("r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _normalize_bto_items(raw_items: List[Dict[str, Any]]) -> List[BTOListing]:
+    """convert raw items into a frontend-friendly list with lat/lng and key fields."""
+    normalized: List[BTOListing] = []
+    for item in raw_items:
+        coords_raw = item.get("coordinates")
+        lat, lng = None, None
+        if isinstance(coords_raw, str):
+            # Stored as string like "[1.3772, 103.8525]"
+            try:
+                parsed = json.loads(coords_raw)
+                if isinstance(parsed, list) and len(parsed) == 2:
+                    lat, lng = float(parsed[0]), float(parsed[1])
+            except Exception:
+                pass
+        elif isinstance(coords_raw, list) and len(coords_raw) == 2:
+            lat, lng = float(coords_raw[0]), float(coords_raw[1])
+
+        props = (item.get("properties") or {})
+        desc_list = props.get("description") or []
+        desc = desc_list[0] if desc_list else {}
+
+        normalized.append(BTOListing(
+            lat=lat if lat is not None else 0.0,
+            lng=lng if lng is not None else 0.0,
+            town=str(desc.get("town", "")),
+            flatType=str(desc.get("flatType", "")),
+            projectId=desc.get("projectId"),
+            region=props.get("region"),
+            listingType=props.get("listingType"),
+            stage=desc.get("stage"),
+            ballotQtr=desc.get("ballotQtr"),
+        ))
+    return normalized
+
+
+@app.get("/bto_listings", response_model=List[BTOListing])
+def get_bto_listings():
+    try:
+        raw = _load_bto_json()
+        return _normalize_bto_items(raw)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to load listings: {e}")

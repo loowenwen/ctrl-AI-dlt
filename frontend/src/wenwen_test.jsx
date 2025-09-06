@@ -1,23 +1,49 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import axios from "axios";
+// leaflet map rendering
+import { MapContainer, TileLayer, Popup, CircleMarker } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
 
 export default function BTOEstimators() {
-  const [costOutput, setCostOutput] = useState("");
   const [budgetOutput, setBudgetOutput] = useState("");
   const [isBudgetLoading, setIsBudgetLoading] = useState(false);
   const [affordabilityOutput, setAffordabilityOutput] = useState("Affordability check will use the agent soon.");
+  const [btoListings, setBtoListings] = useState([]);
+  const [isLoadingListings, setIsLoadingListings] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [savedByTown, setSavedByTown] = useState({});
+  const [selectedFlatType, setSelectedFlatType] = useState("");
+  const [selectedExerciseDate, setSelectedExerciseDate] = useState("October 2025");
 
-  const handleCostEstimator = (e) => {
-    e.preventDefault();
-    const form = new FormData(e.target);
-    const location = form.get("location");
-    const flatType = form.get("flatType");
-    const projectName = form.get("projectName") || "N/A";
-    const exerciseDate = form.get("exerciseDate") || "2025-10-01";
+  // Unique flat types from concatenated strings like "2-Room Flexi, 3-Room, 4-Room"
+  const flatTypeOptions = useMemo(() => {
+    const set = new Set();
+    for (const item of btoListings || []) {
+      const s = item.flatType || "";
+      for (const t of s.split(",")) {
+        const trimmed = t.trim();
+        if (trimmed) set.add(trimmed);
+      }
+    }
+    // Optional sort for nicer UX
+    const order = ["Community Care Apartment", "2-Room Flexi", "3-Room", "4-Room", "5-Room", "3Gen"];
+    return Array.from(set).sort((a, b) => {
+      const ia = order.indexOf(a);
+      const ib = order.indexOf(b);
+      if (ia === -1 && ib === -1) return a.localeCompare(b);
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+  }, [btoListings]);
 
-    // Mocked output for now
-    setCostOutput(`Location: ${location}\nFlat Type: ${flatType}\nProject Tier: Prime\nExercise Date: ${exerciseDate}\nSample Size: 15\nEstimated Price: $674,283\n95% Confidence Interval: $632,786 - $715,780\nHistorical Trend: stable\nMethodology: linear_regression`);
-  };
+  const filteredListings = useMemo(() => {
+    if (!selectedFlatType) return [];
+    return (btoListings || []).filter((item) => {
+      const s = item.flatType || "";
+      return s.split(",").map((x) => x.trim()).includes(selectedFlatType);
+    });
+  }, [btoListings, selectedFlatType]);
 
   // Top half: only compute budget (loan + total)
   const handleBudgetEstimator = (e) => {
@@ -80,40 +106,188 @@ export default function BTOEstimators() {
     );
   };
 
+  const loadBtoListings = async () => {
+    const API_BASE = process.env.REACT_APP_API_BASE_URL || "http://localhost:8000";
+    try {
+      setIsLoadingListings(true);
+      const resp = await axios.get(`${API_BASE}/bto_listings`);
+      setBtoListings(resp.data || []);
+    } catch (err) {
+      console.error("Failed to load BTO listings", err);
+      setBtoListings([]);
+      alert(`Failed to load BTO listings: ${err?.response?.data?.detail || err?.message || err}`);
+    } finally {
+      setIsLoadingListings(false);
+    }
+  };
+
+  useEffect(() => {
+    // Auto-load listings on mount so map/checklist can render
+    loadBtoListings();
+  }, []);
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectedByTown = useMemo(() => {
+    const map = {};
+    for (const item of btoListings) {
+      const id = item.projectId || `${item.town}-${item.lat}-${item.lng}`;
+      if (!selectedIds.has(id)) continue;
+      const key = item.town || "Unknown";
+      const minimal = {
+        projectId: item.projectId,
+        flatType: item.flatType,
+        lat: item.lat,
+        lng: item.lng,
+        region: item.region,
+        stage: item.stage,
+        ballotQtr: item.ballotQtr,
+      };
+      if (!map[key]) map[key] = [];
+      map[key].push(minimal);
+    }
+    return map;
+  }, [btoListings, selectedIds]);
+
+  const saveSelection = () => {
+    setSavedByTown(selectedByTown);
+    try {
+      localStorage.setItem("selected_btos_by_town", JSON.stringify(selectedByTown));
+    } catch (_) {}
+  };
+
+  const mapCenter = useMemo(() => {
+    if (btoListings && btoListings.length > 0) {
+      return [btoListings[0].lat || 1.3521, btoListings[0].lng || 103.8198];
+    }
+    return [1.3521, 103.8198]; // Singapore
+  }, [btoListings]);
+
   return (
-    <div className="container">
-      <section className="grid">
+    <>
+      {/* Full-width map hero at the top */}
+      <div className="map-hero">
+        <MapContainer center={mapCenter} zoom={11} style={{ height: "100%", width: "100%" }}>
+          <TileLayer
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          />
+          {btoListings.map((bto) => {
+            const id = bto.projectId || `${bto.town}-${bto.lat}-${bto.lng}`;
+            const isSelected = selectedIds.has(id);
+            const color = isSelected ? "#d9534f" : "#1e90ff";
+            return (
+              <CircleMarker key={id} center={[bto.lat, bto.lng]} pathOptions={{ color }} radius={8}>
+                <Popup>
+                  <div style={{ minWidth: 180 }}>
+                    <div style={{ fontWeight: 600 }}>{bto.town}</div>
+                    <div>{bto.flatType}</div>
+                    <div style={{ color: "#666", fontSize: "0.9em" }}>
+                      {bto.region || "Region"} • {bto.stage || "Stage"}
+                    </div>
+                    <div style={{ marginTop: 6 }}>
+                      <button className="button" onClick={() => toggleSelect(id)}>
+                        {isSelected ? "Unselect" : "Select"}
+                      </button>
+                    </div>
+                  </div>
+                </Popup>
+              </CircleMarker>
+            );
+          })}
+        </MapContainer>
+      </div>
+
+      {/* Rest of the UI in a centered container */}
+      <div className="container">
+        <section className="grid">
         {/* BTO Cost Estimator */}
         <div className="card">
           <div className="card-header">
             <div className="card-icon" aria-hidden>💰</div>
             <div>
               <h2 className="card-title">BTO Cost Estimator</h2>
-              <p className="card-subtitle">Quick price estimate by project and type</p>
+              <p className="card-subtitle">Pick a flat type, date, then select BTOs</p>
             </div>
           </div>
-          <form onSubmit={handleCostEstimator} className="form">
-            <div className="input-group">
-              <label className="label" htmlFor="location">Project Location/Town</label>
-              <input id="location" name="location" placeholder="e.g., Tampines" className="input" required />
+          <div className="form">
+            <div className="input-row">
+              <div className="input-group">
+                <label className="label" htmlFor="flatType">Flat Type</label>
+                <select
+                  id="flatType"
+                  className="input"
+                  value={selectedFlatType}
+                  onChange={(e) => setSelectedFlatType(e.target.value)}
+                >
+                  <option value="">Select a flat type</option>
+                  {flatTypeOptions.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="input-group">
+                <label className="label" htmlFor="exerciseDate">Exercise Date</label>
+                <select
+                  id="exerciseDate"
+                  className="input"
+                  value={selectedExerciseDate}
+                  onChange={(e) => setSelectedExerciseDate(e.target.value)}
+                >
+                  <option value="October 2025">October 2025</option>
+                </select>
+              </div>
             </div>
-            <div className="input-group">
-              <label className="label" htmlFor="flatType">Flat Type</label>
-              <input id="flatType" name="flatType" placeholder="e.g., 4-room" className="input" required />
-            </div>
-            <div className="input-group">
-              <label className="label" htmlFor="projectName">Project Name (optional)</label>
-              <input id="projectName" name="projectName" placeholder="e.g., GreenSpring Residences" className="input" />
-            </div>
-            <div className="input-group">
-              <label className="label" htmlFor="exerciseDate">Exercise Date</label>
-              <input id="exerciseDate" type="date" name="exerciseDate" className="input" />
-            </div>
-            <div className="actions">
-              <button type="submit" className="button primary">Estimate Cost</button>
-            </div>
-          </form>
-          <pre className="output" aria-live="polite">{costOutput || "Results will appear here."}</pre>
+          </div>
+
+          {/* Checklist to select BTOs and save by town */}
+          <div className="divider" />
+          <h3 className="section-title">Select BTOs (filtered by flat type)</h3>
+          <div className="actions">
+            <button className="button" onClick={loadBtoListings} disabled={isLoadingListings}>
+              {isLoadingListings ? "Loading..." : "Refresh BTO Listings"}
+            </button>
+          </div>
+          <div className="output" style={{ maxHeight: 220, overflow: "auto" }}>
+            {!selectedFlatType ? (
+              <div>Please select a flat type to see matching BTOs.</div>
+            ) : filteredListings.length === 0 ? (
+              <div>No BTOs available for "{selectedFlatType}".</div>
+            ) : (
+              <ul style={{ listStyle: "none", paddingLeft: 0 }}>
+                {filteredListings.map((bto) => {
+                  const id = bto.projectId || `${bto.town}-${bto.lat}-${bto.lng}`;
+                  return (
+                    <li key={id} style={{ marginBottom: 6 }}>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(id)}
+                          onChange={() => toggleSelect(id)}
+                          style={{ marginRight: 8 }}
+                        />
+                        <strong>{bto.town}</strong> — {bto.flatType}
+                        <span style={{ color: "#666", marginLeft: 8 }}>
+                          ({bto.region || "Region"}, {bto.stage || "Stage"})
+                        </span>
+                      </label>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+          <div className="actions">
+            <button className="button success" onClick={saveSelection}>Save Selection</button>
+          </div>
+          <pre className="output" aria-live="polite">{Object.keys(savedByTown).length ? JSON.stringify(savedByTown, null, 2) : "Saved selection (dictionary) will appear here."}</pre>
         </div>
 
         {/* BTO Budget Estimator - split into two */}
@@ -172,7 +346,10 @@ export default function BTOEstimators() {
           </form>
           <pre className="output" aria-live="polite">{affordabilityOutput}</pre>
         </div>
-      </section>
-    </div>
+
+        {/* Map card removed — now a full-width hero above */}
+        </section>
+      </div>
+    </>
   );
 }

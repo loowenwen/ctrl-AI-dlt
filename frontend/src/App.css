@@ -54,6 +54,16 @@
   margin: 0 auto 64px;
 }
 
+/* Full-width map hero at the top */
+.map-hero {
+  width: 100%;
+  height: 72vh; /* large, immersive map; tweak if you want full viewport */
+  max-width: none;
+  margin: 0 0 24px 0;
+  border-top: 1px solid rgba(255,255,255,0.15);
+  border-bottom: 1px solid rgba(255,255,255,0.15);
+}
+
 /* Responsive grid of cards */
 .grid {
   display: grid;

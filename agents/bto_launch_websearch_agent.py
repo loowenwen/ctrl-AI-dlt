@@ -30,10 +30,16 @@ def normalise_coordinates_payload(data: Any) -> List[Dict[str, Any]]:
             town = (desc or {}).get("town") or props.get("town") or (desc or {}).get("projectName")
             if not town:
                 continue
+
+            flat_types = (desc or {}).get("flatType") or props.get("flatType") or ["N/A"]
+            if isinstance(flat_types, str):
+                flat_types = [flat_types]
+
             items.append({
                 "name": town,
                 "lat": round(float(lat), 6),
-                "lon": round(float(lon), 6)
+                "lon": round(float(lon), 6),
+                "flatTypes": flat_types
             })
         except Exception:
             continue
@@ -41,10 +47,10 @@ def normalise_coordinates_payload(data: Any) -> List[Dict[str, Any]]:
 
 
 def dedupe_and_sort(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    seen: set[Tuple[Any, Any, Any]] = set()
+    seen: set[Tuple[Any, Any]] = set()
     out: List[Dict[str, Any]] = []
     for it in items:
-        key = (it.get("name"), it.get("lat"), it.get("lon"))
+        key = (it.get("lat"), it.get("lon"))
         if key in seen:
             continue
         seen.add(key)
@@ -53,16 +59,23 @@ def dedupe_and_sort(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return out
 
 
-def unique_by_name(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    seen_names: set[str] = set()
-    unique: List[Dict[str, Any]] = []
+def add_name_suffixes(items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """
+    Append _A, _B, etc. to BTOs with the same name to differentiate them
+    while preserving all other data.
+    """
+    name_counts: Dict[str, int] = {}
+    out: List[Dict[str, Any]] = []
+
     for it in items:
-        name = str(it.get("name") or "")
-        if not name or name in seen_names:
-            continue
-        seen_names.add(name)
-        unique.append(it)
-    return unique
+        base_name = it.get("name", "Unknown")
+        count = name_counts.get(base_name, 0)
+        if count > 0:
+            suffix = chr(64 + count + 1)  # 65='A'
+            it["name"] = f"{base_name}_{suffix}"
+        name_counts[base_name] = count + 1
+        out.append(it)
+    return out
 
 
 def extract_coords_only(items: List[Dict[str, Any]]) -> List[List[float]]:
@@ -82,7 +95,7 @@ def extract_coords_only(items: List[Dict[str, Any]]) -> List[List[float]]:
     return coords
 
 
-async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: Optional[str], by_name: bool, coords_only: bool) -> None:
+async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: Optional[str], coords_only: bool) -> None:
     results: List[Dict[str, Any]] = []
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=headless)
@@ -107,7 +120,7 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
         page.on("response", handle_response)
         await page.goto(url, wait_until="domcontentloaded")
 
-        # Try to accept cookies silently
+        # Accept cookies if present
         try:
             for sel in (
                 'button#onetrust-accept-btn-handler',
@@ -121,25 +134,23 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
         except Exception:
             pass
 
-        # Prefer a precise wait for any coordinates request
+        # Wait for coordinates request
         try:
             await page.wait_for_response(lambda r: ("getCoordinates" in r.url or "coordinates" in r.url) and r.status == 200, timeout=15000)
         except Exception:
             await asyncio.sleep(3)
 
-        # small grace period for late arrivals
+        # grace period
         await asyncio.sleep(1)
         await browser.close()
 
-
+    # Deduplicate exact coordinates and sort
     results = dedupe_and_sort(results)
-    if by_name:
-        results = unique_by_name(results)
 
-    import os
+    # Differentiate duplicates by name
+    results = add_name_suffixes(results)
 
-    # Path where you want to save the JSON
-    output_json_path = "/Users/mv/agenticai_hackathon/ctrl-AI-dlt/agents/bto_transport_api/bto_data.json"
+    output_json_path = "agents/bto_data.json"
 
     # Save JSON
     with open(output_json_path, "w", encoding="utf-8") as f:
@@ -153,19 +164,16 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
         if csv_path:
             with open(csv_path, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
-                writer.writerow(["lat", "lon"])  # header
+                writer.writerow(["lat", "lon"])
                 writer.writerows(coords)
             if verbose or pretty:
                 print(f"Wrote {len(coords)} coordinate pairs to {csv_path}")
         else:
-            if pretty:
-                print(json.dumps(coords, indent=2, ensure_ascii=False))
-            else:
-                print(json.dumps(coords, separators=(",", ":"), ensure_ascii=False))
+            print(json.dumps(coords, indent=2 if pretty else None, ensure_ascii=False))
         return
 
     if csv_path:
-        fieldnames = ["name", "lat", "lon"]  # removed launch_date and price_range
+        fieldnames = ["name", "lat", "lon", "flatTypes"]
         with open(csv_path, "w", newline="", encoding="utf-8") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             writer.writeheader()
@@ -174,10 +182,7 @@ async def run(url: str, headless: bool, verbose: bool, pretty: bool, csv_path: O
             if verbose or pretty:
                 print(f"Wrote {len(results)} rows to {csv_path}")
     else:
-        if pretty:
-            print(json.dumps(results, indent=2, ensure_ascii=False))
-        else:
-            print(json.dumps(results, separators=(",", ":"), ensure_ascii=False))
+        print(json.dumps(results, indent=2 if pretty else None, ensure_ascii=False))
 
 
 def parse_args() -> argparse.Namespace:
@@ -187,11 +192,17 @@ def parse_args() -> argparse.Namespace:
     ap.add_argument("--verbose", action="store_true", help="Print network logs and warnings")
     ap.add_argument("--pretty", action="store_true", help="Pretty-print JSON output")
     ap.add_argument("--csv", dest="csv_path", default="", help="Write output to CSV path instead of JSON")
-    ap.add_argument("--unique-by-name", action="store_true", help="Keep only the first entry per estate/town name")
     ap.add_argument("--coords-only", action="store_true", help="Output only coordinate pairs [[lat, lon], ...]")
     return ap.parse_args()
 
 
 if __name__ == "__main__":
     args = parse_args()
-    asyncio.run(run(url=args.url, headless=args.headless, verbose=args.verbose, pretty=args.pretty, csv_path=(args.csv_path or None), by_name=args.unique_by_name, coords_only=args.coords_only))
+    asyncio.run(run(
+        url=args.url,
+        headless=args.headless,
+        verbose=args.verbose,
+        pretty=args.pretty,
+        csv_path=(args.csv_path or None),
+        coords_only=args.coords_only
+    ))

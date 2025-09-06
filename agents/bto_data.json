@@ -1,0 +1,82 @@
+[
+  {
+    "name": "Ang Mo Kio",
+    "lat": 1.37723,
+    "lon": 103.852517,
+    "flatTypes": [
+      "2-Room Flexi, 3-Room, 4-Room"
+    ]
+  },
+  {
+    "name": "Bedok",
+    "lat": 1.327467,
+    "lon": 103.920443,
+    "flatTypes": [
+      "2-Room Flexi, 3-Room, 4-Room, 5-Room, 3Gen"
+    ]
+  },
+  {
+    "name": "Bishan",
+    "lat": 1.345934,
+    "lon": 103.849374,
+    "flatTypes": [
+      "2-Room Flexi, 3-Room, 4-Room"
+    ]
+  },
+  {
+    "name": "Bukit Merah",
+    "lat": 1.270142,
+    "lon": 103.807832,
+    "flatTypes": [
+      "2-Room Flexi, 3-Room, 4-Room"
+    ]
+  },
+  {
+    "name": "Bukit Merah_B",
+    "lat": 1.284901,
+    "lon": 103.817304,
+    "flatTypes": [
+      "2-Room Flexi, 4-Room"
+    ]
+  },
+  {
+    "name": "Jurong East",
+    "lat": 1.319908,
+    "lon": 103.743912,
+    "flatTypes": [
+      "2-Room Flexi, 3-Room, 4-Room, 5-Room, 3Gen"
+    ]
+  },
+  {
+    "name": "Sengkang",
+    "lat": 1.39886,
+    "lon": 103.87985,
+    "flatTypes": [
+      "Community Care Apartment, 2-Room Flexi, 4-Room, 5-Room"
+    ]
+  },
+  {
+    "name": "Toa Payoh",
+    "lat": 1.330322,
+    "lon": 103.838266,
+    "flatTypes": [
+      "2-Room Flexi, 3-Room, 4-Room"
+    ]
+  },
+  {
+    "name": "Yishun",
+    "lat": 1.417931,
+    "lon": 103.828726,
+    "flatTypes": [
+      "2-Room Flexi, 3-Room, 4-Room, 5-Room"
+    ]
+  },
+  {
+    "name": "Yishun_B",
+    "lat": 1.430822,
+    "lon": 103.845352,
+    "flatTypes": [
+      "2-Room Flexi, 4-Room"
+    ]
+  }
+]

@@ -2,9 +2,12 @@ import argparse
 import asyncio
 import json
 import os
+import random
+from openai import max_retries
 import requests
 import subprocess
-from datetime import datetime
+from datetime import datetime, time as dt_time
+import time
 from typing import Dict, List
 import boto3
 from dotenv import load_dotenv
@@ -19,8 +22,10 @@ class Config:
         self.onemap_auth_url = "https://www.onemap.gov.sg/api/auth/post/getToken"
         self.onemap_search_url = "https://www.onemap.gov.sg/api/common/elastic/search"
         self.onemap_route_url = "https://www.onemap.gov.sg/api/public/routingsvc/route"
-        self.bto_data_file = "bto_data.json"
-        self.comparison_data_file = "bto_transport_data_for_comparison.json"
+        # Make JSON paths relative to this script's folder
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        self.bto_data_file = os.path.join(base_dir, "bto_data.json")
+        self.comparison_data_file = os.path.join(base_dir, "bto_transport_data_for_comparison.json")
         self.time_periods = {
             "Morning Peak": "07:30:00",
             "Evening Peak": "18:00:00",
@@ -228,10 +233,88 @@ class BTOTransportService:
             raise ValueError(f"Failed to load comparison data: {str(e)}")
 
 class BTOTransportAnalyzer:
+
+    
     """AI-based analyzer for BTO transport data."""
-    def __init__(self, config: Config):
+    def __init__(self, config):
         self.config = config
         self.service = BTOTransportService(config)
+
+    def invoke_with_backoff(self, client, payload, max_retries=5):
+        """Invoke Bedrock model with exponential backoff on throttling."""
+        retry = 0
+        while retry < max_retries:
+            try:
+                response = client.invoke_model(**payload)
+                return json.loads(response["body"].read())["content"][0]["text"]
+            except client.exceptions.ThrottlingException:
+                wait_time = (2 ** retry) + random.uniform(0, 1)  # exponential backoff with jitter
+                print(f"Throttled. Waiting {wait_time:.1f}s before retry {retry+1}...")
+                time.sleep(wait_time)
+                retry += 1
+        raise Exception("Max retries reached. Please try again later.")
+
+    def analyze_all_btos(self, postal_code: str, time_period: str) -> Dict[str, str]:
+        """Generate transport analysis reports for ALL BTOs in the dataset."""
+
+        if not (postal_code.isdigit() and len(postal_code) == 6):
+            return {"error": "Postal code must be a 6-digit number"}
+        if time_period not in self.config.time_periods:
+            return {"error": f"Invalid time period: {time_period}. Choose from {list(self.config.time_periods.keys())}"}
+
+        btos = self.service.load_bto_locations()
+        if not btos:
+            return {"error": "No BTO data available"}
+
+        all_reports = []
+        agent = self.create_single_bto_agent()
+
+        for bto in btos:
+            transport_data = self.service.get_transport_data(bto["lat"], bto["lon"], postal_code, time_period)
+            if "error" in transport_data:
+                all_reports.append({"bto_name": bto["name"], "error": transport_data["error"]})
+                continue
+
+            formatted_data = self.service.format_route_data(
+                transport_data, bto["name"], bto.get("flatType", "N/A")
+            )
+
+            destination_address = formatted_data["destination"].get("address", postal_code)
+
+            analysis_prompt = f"""
+You are a Singapore public transport specialist analyzing BTO commuting accessibility.
+
+TASK: Provide a clear, concise, but detailed transport report for {bto['name']} (Flat: {bto.get('flatType', 'N/A')}) 
+to {destination_address} during {time_period}.
+
+Transport Data:
+{json.dumps(formatted_data, indent=2)}
+
+Return ONLY a valid JSON object with this structure:
+
+{{
+  "bto_name": "string",
+  "summary": "string (3–4 sentences, concise but insightful)",
+  "journey_time": "string",
+  "starting_point": "string",
+  "transfers": "string",
+  "transport_modes": ["string"],
+  "pros": ["string"],
+  "cons": ["string"]
+}}
+"""
+
+            try:
+                raw_analysis = agent(analysis_prompt)
+                try:
+                    parsed = json.loads(raw_analysis)
+                    all_reports.append(parsed)
+                except json.JSONDecodeError:
+                    all_reports.append({"bto_name": bto["name"], "raw_text": raw_analysis})
+            except Exception as e:
+                all_reports.append({"bto_name": bto["name"], "error": str(e)})
+
+        return {"reports": all_reports}
 
     def create_single_bto_agent(self) -> callable:
         """Create AI agent for single BTO transport analysis using boto3."""
@@ -253,18 +336,20 @@ DO NOT consider:
 - Any non-transport factors
 
 Provide a detailed description of the transport route details, connectivity, and accessibility based purely on public transport efficiency for this single location."""
+
         def invoke(prompt: str) -> str:
-            response = client.invoke_model(
-                modelId="anthropic.claude-3-5-sonnet-20240620-v1:0",
-                body=json.dumps({
+            payload = {
+                "modelId": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+                "body": json.dumps({
                     "anthropic_version": "bedrock-2023-05-31",
                     "max_tokens": 1000,
                     "temperature": 0.7,
                     "system": system_prompt,
                     "messages": [{"role": "user", "content": prompt}]
                 })
-            )
-            return json.loads(response["body"].read())["content"][0]["text"]
+            }
+            return self.invoke_with_backoff(client, payload)
+
         return invoke
 
     def create_comparison_agent(self) -> callable:
@@ -287,18 +372,20 @@ DO NOT consider:
 - Any non-transport factors
 
 Provide a relative ranking of the provided BTO locations based purely on public transport efficiency and accessibility."""
+
         def invoke(prompt: str) -> str:
-            response = client.invoke_model(
-                modelId="anthropic.claude-3-5-sonnet-20240620-v1:0",
-                body=json.dumps({
+            payload = {
+                "modelId": "anthropic.claude-3-5-sonnet-20240620-v1:0",
+                "body": json.dumps({
                     "anthropic_version": "bedrock-2023-05-31",
                     "max_tokens": 1000,
                     "temperature": 0.7,
                     "system": system_prompt,
                     "messages": [{"role": "user", "content": prompt}]
                 })
-            )
-            return json.loads(response["body"].read())["content"][0]["text"]
+            }
+            return self.invoke_with_backoff(client, payload)
+
         return invoke
 
     def analyze_single_bto(self, name: str, postal_code: str, time_period: str) -> Dict[str, str]:
@@ -412,7 +499,7 @@ Return ONLY a valid JSON object with this structure:
         {{
             "rank": number,
             "bto_name": "string",
-            "flat_types": "string"
+        
         }}
     ],
     "winner_analysis": {{
@@ -463,8 +550,16 @@ Focus ONLY on transport factors. Use actual data from the transport information 
 """
         try:
             agent = self.create_comparison_agent()
-            analysis = agent(analysis_prompt)
-            return {"result": analysis}
+            raw_response = agent(analysis_prompt)
+
+            # Try to parse the response as JSON
+            try:
+                result = json.loads(raw_response)
+            except json.JSONDecodeError:
+                # If Claude didn't return valid JSON, keep raw text
+                result = {"raw_text": raw_response}
+
+            return {"result": result}
         except Exception as e:
             return {"error": f"AI analysis failed: {str(e)}"}
 
@@ -499,3 +594,44 @@ def clear_comparison_data() -> None:
     config = Config()
     analyzer = BTOTransportAnalyzer(config)
     analyzer.clear_comparison_data()
+
+
+def analyze_all_bto_transports(postal_code: str, time_period: str) -> Dict[str, str]:
+    """Analyze transport for ALL BTO locations with automatic retry/backoff to handle AWS throttling."""
+    config = Config()
+    analyzer = BTOTransportAnalyzer(config)
+    results = {}
+
+    btos = get_bto_locations()
+    
+    for bto in btos:
+        name = bto["name"]
+        retry = 0
+        max_retries = 5
+
+        while retry < max_retries:
+            try:
+                results[name] = analyzer.analyze_single_bto(name, postal_code, time_period)
+                
+                # If successful, break out of retry loop
+                break
+            except Exception as e:
+                # Check if it's a throttling exception
+                if "ThrottlingException" in str(e) or "too many requests" in str(e).lower():
+                    wait_time = (2 ** retry) + random.uniform(0, 1)  # exponential backoff + jitter
+                    time.sleep(wait_time)
+                    retry += 1
+                else:
+                    # Other errors, log and skip
+                    results[name] = {"error": str(e)}
+                    break
+        else:
+            # Max retries reached
+            results[name] = {"error": "Max retries reached due to throttling. Try again later."}
+
+        # small random delay between BTOs to reduce chance of throttling
+        inter_bto_wait = random.uniform(0.5, 1.2)
+        print(f"⏳ Waiting {inter_bto_wait:.2f}s before next BTO request...")
+        time.sleep(inter_bto_wait)
+
+    return results

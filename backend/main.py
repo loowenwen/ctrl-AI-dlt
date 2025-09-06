@@ -9,6 +9,12 @@ from pathlib import Path
 from agents.bto_budget_estimator import compute_total_budget
 from agents.bto_cost_estimator_agent import run_estimates_for_selection
 from agents.bto_affordability_agent import assess_estimates_with_budget
+from agents.bto_launch_websearch_agent import run as launch_websearch
+from agents.bto_transport import analyze_bto_transport, compare_bto_transports, get_bto_locations, clear_comparison_data, analyze_all_bto_transports
+
+
+
+
 
 app = FastAPI()
 
@@ -320,3 +326,63 @@ def affordability_from_estimates(req: AffordabilityFromEstimatesRequest):
         return AffordabilityFromEstimatesResponse(total_budget=round(budget, 2), results=assessed)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to assess affordability: {e}")
+
+
+
+
+#######TRANSPORT EFFICIENCY (MILI)####
+
+
+
+# --- Web scraping agent ---
+@app.post("/scrape_bto")
+async def scrape_bto(url: str):
+    """Scrape BTO project data from HDB website and save to bto_data.json."""
+    await launch_websearch(
+        url=url,
+        headless=True,
+        verbose=False,
+        pretty=True,
+        csv_path=None,
+        by_name=True,
+        coords_only=False,
+    )
+    return {"status": "scraping completed", "source_url": url}
+
+
+# --- Single BTO analysis ---
+@app.post("/analyze_bto")
+def analyze_bto(name: str, postal_code: str, time_period: str):
+    """Analyze transport accessibility for one BTO location."""
+    result = analyze_bto_transport(name, postal_code, time_period)
+    return result
+
+# --- Analyze ALL BTOs ---
+@app.post("/analyze_all_btos")
+def analyze_all_btos(postal_code: str, time_period: str):
+    """Analyze transport accessibility for ALL BTO locations."""
+    result = analyze_all_bto_transports(postal_code, time_period)
+    return result
+
+
+# --- Compare multiple BTOs ---
+@app.post("/compare_btos")
+def compare_btos(destination_address: str, time_period: str):
+    """Compare transport accessibility across multiple BTO projects."""
+    result = compare_bto_transports(destination_address, time_period)
+    return result
+
+
+# --- Get available BTOs (from scraped data) ---
+@app.get("/btos")
+def list_btos():
+    """List all available BTO projects from bto_data.json."""
+    return {"btos": get_bto_locations()}
+
+
+# --- Clear comparison data ---
+@app.delete("/compare_btos/clear")
+def clear_comparisons():
+    """Clear stored BTO comparison data."""
+    clear_comparison_data()
+    return {"status": "comparison data cleared"}

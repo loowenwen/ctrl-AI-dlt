@@ -24,12 +24,7 @@ load_dotenv(".env")
 AWS_REGION = "us-east-1"
 BEDROCK_MODEL_ID = os.getenv("CLAUDE_35")
 
-session = boto3.Session(
-    aws_access_key_id=AWS_ACCESS_KEY_ID,
-    aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
-    aws_session_token=AWS_SESSION_TOKEN,
-    region_name=AWS_REGION
-)
+session = boto3.Session(region_name="us-east-1")
 
 model = BedrockModel(
     model_id=BEDROCK_MODEL_ID,

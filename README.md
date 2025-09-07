@@ -117,7 +117,7 @@ Data
   - `tiktok discovery page scraper agent`: Scrapes tiktok discovery meta data for video links
   - `text extractor agent`: Extract text content ONLY from websearch results
   - `sentiment agent`: Uses text and video results to calculate a final sentiment regarding the user's parameters as well as present evidence.
-- Packaged in lambda for easy calling (no fast api required) and scalability (note: should have packaged EACH subagents into one lambda, but due to a lack of time was unable to do so)
+- Packaged in lambda for easy calling (no fast api required) and scalability (note: should have packaged EACH subagents into one lambda, but due to a lack of time can only be considered in future roadmap)
 ---
 
 ## Backend API (used by frontend)

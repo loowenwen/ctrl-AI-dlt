@@ -111,12 +111,12 @@ Data
 - File: `agents/sentiment_agents/sentiment_final.py:1`
 - What it provides:
   - DAG orchestration flow of the subagents:
-  - `Query_refiner`: Refines parameters inserted by user into a search query for google search
-  - `websearch`: Uses google search api to scrape google for tiktok videos, youtube videos and text content regarding user query
-  - `video_ingestion`: Download videos, use openai whisper to transcribe videos then send to claude 3.5 to gather summary of transciption
-  - `tiktok_discovery`: Scrapes tiktok discovery meta data for video links
-  - `text_extractor`: Extract text content ONLY from websearch results
-  - `sentiment`: Uses text and video results to calculate a final sentiment regarding the user's parameters as well as present evidence.
+  - `query refiner`: Refines parameters inserted by user into a search query for google search
+  - `websearch agent`: Uses google search api to scrape google for tiktok videos, youtube videos and text content regarding user query
+  - `video understanding agent`: Download videos, use openai whisper to transcribe videos then send to claude 3.5 to gather summary of transciption
+  - `tiktok discovery page scraper agent`: Scrapes tiktok discovery meta data for video links
+  - `text extractor agent`: Extract text content ONLY from websearch results
+  - `sentiment agent`: Uses text and video results to calculate a final sentiment regarding the user's parameters as well as present evidence.
 - Packaged in lambda for easy calling (no fast api required) and scalability (note: should have packaged EACH subagents into one lambda, but due to a lack of time was unable to do so)
 ---
 

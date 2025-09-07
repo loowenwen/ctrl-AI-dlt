@@ -8,7 +8,7 @@ function App() {
     <Router>
       <div className="min-h-screen bg-gray-50">
         {/* Navigation */}
-        <nav className="sticky top-0 flex gap-4 p-4 bg-white shadow">
+        <nav className="sticky top-0 z-[2000] flex gap-4 p-4 bg-white shadow">
           <Link to="/" className="font-semibold text-lg px-3 py-2">Home</Link>
           <a
             href="https://www.hdb.gov.sg/"

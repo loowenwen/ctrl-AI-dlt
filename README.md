@@ -15,18 +15,6 @@ We designed a **One-Stop Agentic AI** website that helps users **research, evalu
 
 <img width="1971" height="2336" alt="Agentic drawio (1)" src="https://github.com/user-attachments/assets/8e5b2790-9f76-4421-aa8f-6ef95226447e" />
 
-**Sentiment Agent**
-
-<img width="893" height="591" alt="Screenshot 2025-09-08 at 1 15 54 AM" src="https://github.com/user-attachments/assets/c6b861e7-b92b-47e9-8c67-1724ff424d28" />
-
-**Transport Agent**
-
-<img width="848" height="494" alt="Screenshot 2025-09-08 at 1 16 10 AM" src="https://github.com/user-attachments/assets/0155ea6d-495c-47a9-9619-6fe91ccafdb5" />
-
-**Affordability Agent**
-
-<img width="772" height="524" alt="Screenshot 2025-09-08 at 1 15 37 AM" src="https://github.com/user-attachments/assets/4c552ef9-c410-46a8-837e-4488a9424341" />
-
 # Set up
 
 ## .env
@@ -62,6 +50,9 @@ Data
 ---
 
 ## Agents Overview 
+**Affordability Agent**
+
+<img width="772" height="524" alt="Screenshot 2025-09-08 at 1 15 37 AM" src="https://github.com/user-attachments/assets/4c552ef9-c410-46a8-837e-4488a9424341" />
 
 ### BTO Budget Estimator
 - File: `agents/bto_budget_estimator.py:1`
@@ -99,6 +90,9 @@ Data
     - `python agents/bto_launch_websearch_agent.py --headless --pretty`
   - Save CSV:
     - `python agents/bto_launch_websearch_agent.py --headless --csv out.csv`
+**Transport Agent**
+
+<img width="848" height="494" alt="Screenshot 2025-09-08 at 1 16 10 AM" src="https://github.com/user-attachments/assets/0155ea6d-495c-47a9-9619-6fe91ccafdb5" />
 
 ### Transport Analysis
 - File: `agents/bto_transport.py:1`
@@ -109,6 +103,21 @@ Data
   - Stores comparison data in `agents/bto_transport_data_for_comparison.json`
 - Requires OneMap credentials in `.env` (`ONEMAP_EMAIL`, `ONEMAP_PASSWORD`).
 
+**Sentiment Agent**
+
+<img width="893" height="591" alt="Screenshot 2025-09-08 at 1 15 54 AM" src="https://github.com/user-attachments/assets/c6b861e7-b92b-47e9-8c67-1724ff424d28" />
+
+### Sentiment Agent
+- File: `agents/sentiment_agents/sentiment_final.py:1`
+- What it provides:
+  - DAG orchestration flow of the subagents:
+  - `Query_refiner`: Refines parameters inserted by user into a search query for google search
+  - `websearch`: Uses google search api to scrape google for tiktok videos, youtube videos and text content regarding user query
+  - `video_ingestion`: Download videos, use openai whisper to transcribe videos then send to claude 3.5 to gather summary of transciption
+  - `tiktok_discovery`: Scrapes tiktok discovery meta data for video links
+  - `text_extractor`: Extract text content ONLY from websearch results
+  - `sentiment`: Uses text and video results to calculate a final sentiment regarding the user's parameters as well as present evidence.
+- Packaged in lambda for easy calling (no fast api required) and scalability (note: should have packaged EACH subagents into one lambda, but due to a lack of time was unable to do so)
 ---
 
 ## Backend API (used by frontend)

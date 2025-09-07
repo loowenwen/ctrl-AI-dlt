@@ -12,12 +12,19 @@ We designed a **One-Stop Agentic AI** website that helps users **research, evalu
 
 ### Architecture
 **Full Architecture**
+
 <img width="1971" height="2336" alt="Agentic drawio (1)" src="https://github.com/user-attachments/assets/8e5b2790-9f76-4421-aa8f-6ef95226447e" />
+
 **Sentiment Agent**
+
 <img width="893" height="591" alt="Screenshot 2025-09-08 at 1 15 54 AM" src="https://github.com/user-attachments/assets/c6b861e7-b92b-47e9-8c67-1724ff424d28" />
+
 **Transport Agent**
+
 <img width="848" height="494" alt="Screenshot 2025-09-08 at 1 16 10 AM" src="https://github.com/user-attachments/assets/0155ea6d-495c-47a9-9619-6fe91ccafdb5" />
+
 **Affordability Agent**
+
 <img width="772" height="524" alt="Screenshot 2025-09-08 at 1 15 37 AM" src="https://github.com/user-attachments/assets/4c552ef9-c410-46a8-837e-4488a9424341" />
 
 # Set up

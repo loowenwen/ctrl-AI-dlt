@@ -32,10 +32,9 @@ We designed a **One-Stop Agentic AI** website that helps users **research, evalu
 ## .env
 Create a .env with the following parameters:
 ```bash
+[optional: Add your AWS keys into .env or inside terminal itself]
 AWS_PROFILE=[your aws profile]
 REGION="us-east-1"
-google_search_api=[google search api]
-GROQ_API_KEY=[Groq api key]
 ONEMAP_EMAIL=[Email used for one map]
 ONEMAP_PASSWORD=[one map password]
 ```

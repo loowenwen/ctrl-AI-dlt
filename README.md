@@ -186,6 +186,3 @@ Run locally
 - Add caching for cost estimates and transport queries.
 - Expand training data and feature engineering for cost regression.
 - Add CI checks (lint, type, test) and pre‑commit hooks.
-
-## Contributing
-Issues and pull requests are welcome. Please include clear reproduction steps and keep changes focused. For larger proposals, open an issue first to discuss scope and design.

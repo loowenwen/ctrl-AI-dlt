@@ -84,7 +84,7 @@ ONEMAP_PASSWORD=
 Notes
 - Do not commit `.env` to version control.
 - Bedrock region defaults to `us-east-1` in code; align your credentials accordingly.
-- OneMap credentials are required for transport analysis.
+- OneMap credentials are required for transport analysis. Refer to this [website](https://www.onemap.gov.sg/apidocs/)
 
 ## Agents
 Affordability & Budget

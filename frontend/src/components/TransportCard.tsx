@@ -1,0 +1,241 @@
+import { useEffect, useMemo, useState } from "react";
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Loader2 } from "lucide-react";
+import TransportResultView, { type TransportResult } from "@/components/TransportResultView";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+
+type BTOListingAPI = {
+  lat: number;
+  lng: number;
+  town: string;
+  flatType: string;
+  projectId?: string;
+  region?: string;
+  listingType?: string;
+  stage?: string;
+  ballotQtr?: string;
+};
+
+type Props = {
+  btoProject?: string;
+};
+
+const ALL_VALUE = "__ALL__";
+
+type AllResponse = Record<string, TransportResult>;
+
+export default function TransportCard({ btoProject }: Props) {
+  const [projects, setProjects] = useState<string[]>([]);
+  const [projectsLoading, setProjectsLoading] = useState<boolean>(false);
+  const [projectsError, setProjectsError] = useState<string | null>(null);
+
+  const [name, setName] = useState<string>(btoProject ?? "");
+  const [postal, setPostal] = useState<string>("");
+  const [period, setPeriod] = useState<string>("");
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [singleData, setSingleData] = useState<TransportResult | null>(null);
+  const [allData, setAllData] = useState<AllResponse | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        setProjectsLoading(true);
+        setProjectsError(null);
+        const res = await fetch(`http://127.0.0.1:8000/bto_listings`);
+        if (!res.ok) throw new Error(`Failed to load listings (${res.status})`);
+        const json = (await res.json()) as BTOListingAPI[];
+        if (!alive) return;
+
+        const names = Array.from(
+          new Set(json.map((x) => (x.town || "").trim()).filter(Boolean))
+        ).sort();
+
+        setProjects(names);
+
+        // Preselect prop if present
+        if (btoProject && names.includes(btoProject)) {
+          setName((prev) => (prev ? prev : btoProject));
+        }
+      } catch (e: any) {
+        if (!alive) return;
+        setProjectsError(e?.message || "Failed to load projects");
+      } finally {
+        if (alive) setProjectsLoading(false);
+      }
+    })();
+    return () => { alive = false; };
+  }, [btoProject]);
+
+  const isAll = name === ALL_VALUE;
+
+  const canQuery = useMemo(() => {
+    // For "All", we don't need a specific name
+    return (isAll || name.trim().length > 0) && postal.trim().length > 0 && period.trim().length > 0;
+  }, [isAll, name, postal, period]);
+
+  async function onQuery() {
+    if (!canQuery) return;
+    setIsLoading(true);
+    setError(null);
+    setSingleData(null);
+    setAllData(null);
+
+    try {
+      if (isAll) {
+        const params = new URLSearchParams({
+          postal_code: postal.trim(),
+          time_period: period.trim(),
+        });
+        const res = await fetch(`http://127.0.0.1:8000/analyze_all_btos?${params.toString()}`, {
+          method: "POST",
+        });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const json = (await res.json()) as AllResponse;
+        setAllData(json);
+      } else {
+        // Single project
+        const params = new URLSearchParams({
+          name: name.trim(),
+          postal_code: postal.trim(),
+          time_period: period.trim(),
+        });
+        const res = await fetch(`http://127.0.0.1:8000/analyze_bto?${params.toString()}`, {
+          method: "POST",
+        });
+        if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+        const json = (await res.json()) as TransportResult;
+        setSingleData(json);
+      }
+    } catch (e: any) {
+      setError(e?.message || "Unknown error");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  // Sort keys when rendering "All" for consistent order
+  const allEntries = useMemo(() => {
+    if (!allData) return [];
+    return Object.entries(allData).sort(([a], [b]) => a.localeCompare(b));
+  }, [allData]);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Transportation</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Form */}
+        <div className="grid gap-3">
+          <div className="grid gap-1.5">
+            <Label htmlFor="bto-name">BTO Project</Label>
+            <Select
+              value={name || undefined}
+              onValueChange={setName}
+              disabled={projectsLoading || !!projectsError}
+            >
+              <SelectTrigger id="bto-name" className="w-full">
+                <SelectValue placeholder={projectsLoading ? "Loading…" : "Select a BTO project"} />
+              </SelectTrigger>
+              <SelectContent className="max-h-72">
+                <SelectItem value={ALL_VALUE}>All BTOs</SelectItem>
+                {projects.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {projectsError && (
+              <p className="text-xs text-rose-600">Failed to load projects: {projectsError}</p>
+            )}
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label htmlFor="postal">Destination Postal Code</Label>
+            <Input
+              id="postal"
+              type="text"
+              inputMode="numeric"
+              placeholder="e.g. 079903"
+              value={postal}
+              onChange={(e) => setPostal(e.target.value)}
+            />
+          </div>
+
+          <div className="grid gap-1.5">
+            <Label>Time Period</Label>
+            <Select value={period} onValueChange={setPeriod}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose time period" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Morning Peak">Morning Peak</SelectItem>
+                <SelectItem value="Evening Peak">Evening Peak</SelectItem>
+                <SelectItem value="Daytime Off-Peak">Daytime Off-Peak</SelectItem>
+                <SelectItem value="Nighttime Off-Peak">Nighttime Off-Peak</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex justify-end">
+            <Button onClick={onQuery} disabled={!canQuery || isLoading}>
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isLoading ? (isAll ? "Analyzing all…" : "Analyzing…") : "Query"}
+            </Button>
+          </div>
+        </div>
+
+        {/* States */}
+        {error && (
+          <Alert>
+            <AlertTitle>Transport analysis failed</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {isLoading && !error && (
+          <div className="text-sm text-muted-foreground">
+            {isAll
+              ? "Analyzing all BTO locations… computing routes, walking times, and transfers."
+              : "Computing route, walking time, transfers and reliability…"}
+          </div>
+        )}
+
+        {/* Results */}
+        {!isLoading && !error && singleData && (
+          <>
+            <div className="text-base font-semibold">{name}</div>
+            <TransportResultView data={singleData} />
+          </>
+        )}
+
+        {!isLoading && !error && allEntries.length > 0 && (
+          <Accordion type="multiple" className="w-full">
+            {allEntries.map(([projectName, resultObj]) => (
+              <AccordionItem key={projectName} value={projectName}>
+                <AccordionTrigger className="text-base font-semibold">
+                  {projectName}
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="pt-2">
+                    <TransportResultView name={projectName} data={resultObj} />
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

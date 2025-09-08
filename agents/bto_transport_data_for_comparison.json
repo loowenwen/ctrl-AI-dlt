@@ -1475,5 +1475,777 @@
         "walk_time_min": 19.9
       }
     }
+  },
+  {
+    "bto_name": "Jurong East",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.319908,
+      "lon": 103.743912
+    },
+    "destination": {
+      "lat": 1.34169243327446,
+      "lon": 103.842046133241,
+      "address": "10F BRADDELL HILL BRADDELL VIEW SINGAPORE 579725",
+      "postal_code": "579725"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 53.5,
+        "walking_time_minutes": 6.8,
+        "transit_time_minutes": 40.7,
+        "waiting_time_minutes": 6.0,
+        "transfers": 2,
+        "walk_distance_meters": 432.97,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "235",
+          "176",
+          "CC"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "20259",
+          "20159",
+          "20149",
+          "20139",
+          "20289",
+          "17339",
+          "17329",
+          "17319",
+          "17369",
+          "17309",
+          "17359",
+          "17299",
+          "16249",
+          "16239",
+          "52559",
+          "52211",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "20259",
+          "line": null,
+          "walk_time_min": 6.8
+        }
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 59.6,
+        "walking_time_minutes": 11.4,
+        "transit_time_minutes": 39.0,
+        "waiting_time_minutes": 9.2,
+        "transfers": 2,
+        "walk_distance_meters": 752.38,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "230",
+          "176",
+          "CC"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "20259",
+          "20159",
+          "20149",
+          "20139",
+          "20289",
+          "17339",
+          "17329",
+          "17319",
+          "17369",
+          "17309",
+          "17359",
+          "17299",
+          "16249",
+          "16239",
+          "52559",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "20259",
+          "line": null,
+          "walk_time_min": 11.4
+        }
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 63.9,
+        "walking_time_minutes": 12.7,
+        "transit_time_minutes": 44.4,
+        "waiting_time_minutes": 6.8,
+        "transfers": 2,
+        "walk_distance_meters": 810.54,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "EW",
+          "201",
+          "NS"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "20261",
+          "20059",
+          "20039",
+          "20029",
+          "17059",
+          "17189",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "20261",
+          "line": null,
+          "walk_time_min": 12.7
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 53.5,
+      "walking_time_minutes": 6.8,
+      "transit_time_minutes": 40.7,
+      "waiting_time_minutes": 6.0,
+      "transfers": 2,
+      "walk_distance_meters": 432.97,
+      "transport_modes": [
+        "BUS",
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "235",
+        "176",
+        "CC"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "20259",
+        "20159",
+        "20149",
+        "20139",
+        "20289",
+        "17339",
+        "17329",
+        "17319",
+        "17369",
+        "17309",
+        "17359",
+        "17299",
+        "16249",
+        "16239",
+        "52559",
+        "52211",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "20259",
+        "line": null,
+        "walk_time_min": 6.8
+      }
+    }
+  },
+  {
+    "bto_name": "Jurong East",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.319908,
+      "lon": 103.743912
+    },
+    "destination": {
+      "lat": 1.34758009360405,
+      "lon": 103.956310473029,
+      "address": "137 SIMEI STREET 1 SINGAPORE 520137",
+      "postal_code": "520137"
+    },
+    "time_period": "Evening Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 81.4,
+        "walking_time_minutes": 17.7,
+        "transit_time_minutes": 60.3,
+        "waiting_time_minutes": 3.4,
+        "transfers": 1,
+        "walk_distance_meters": 1092.86,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "EW",
+          "201"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "20259",
+          "20159",
+          "20199",
+          "20189",
+          "20261",
+          "20059",
+          "20039",
+          "20029",
+          "17059",
+          "17189",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "20259",
+          "line": null,
+          "walk_time_min": 17.7
+        }
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 83.0,
+        "walking_time_minutes": 20.1,
+        "transit_time_minutes": 59.4,
+        "waiting_time_minutes": 3.5,
+        "transfers": 1,
+        "walk_distance_meters": 1286.43,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "EW",
+          "78"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "20251",
+          "20261",
+          "20271",
+          "28221",
+          "28231",
+          "28241",
+          "28439",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "20251",
+          "line": null,
+          "walk_time_min": 20.1
+        }
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 83.1,
+        "walking_time_minutes": 12.1,
+        "transit_time_minutes": 62.6,
+        "waiting_time_minutes": 8.4,
+        "transfers": 2,
+        "walk_distance_meters": 794.17,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "EW",
+          "9",
+          "78"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "20251",
+          "20261",
+          "20271",
+          "28221",
+          "28231",
+          "28241",
+          "28439",
+          "96169",
+          "96269",
+          "96181",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "20251",
+          "line": null,
+          "walk_time_min": 12.1
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 81.4,
+      "walking_time_minutes": 17.7,
+      "transit_time_minutes": 60.3,
+      "waiting_time_minutes": 3.4,
+      "transfers": 1,
+      "walk_distance_meters": 1092.86,
+      "transport_modes": [
+        "BUS",
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "EW",
+        "201"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "20259",
+        "20159",
+        "20199",
+        "20189",
+        "20261",
+        "20059",
+        "20039",
+        "20029",
+        "17059",
+        "17189",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "20259",
+        "line": null,
+        "walk_time_min": 17.7
+      }
+    }
+  },
+  {
+    "bto_name": "Bukit Merah",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.270142,
+      "lon": 103.807832
+    },
+    "destination": {
+      "lat": 1.34169243327446,
+      "lon": 103.842046133241,
+      "address": "10F BRADDELL HILL BRADDELL VIEW SINGAPORE 579725",
+      "postal_code": "579725"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 34.8,
+        "walking_time_minutes": 6.7,
+        "transit_time_minutes": 25.7,
+        "waiting_time_minutes": 2.4,
+        "transfers": 1,
+        "walk_distance_meters": 446.06,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "235",
+          "CC"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "52559",
+          "52211",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 40.0,
+        "walking_time_minutes": 11.3,
+        "transit_time_minutes": 24.0,
+        "waiting_time_minutes": 4.7,
+        "transfers": 1,
+        "walk_distance_meters": 765.47,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "230",
+          "CC"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "52559",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 34.8,
+      "walking_time_minutes": 6.7,
+      "transit_time_minutes": 25.7,
+      "waiting_time_minutes": 2.4,
+      "transfers": 1,
+      "walk_distance_meters": 446.06,
+      "transport_modes": [
+        "BUS",
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "235",
+        "CC"
+      ],
+      "first_transport_mode": "SUBWAY",
+      "stop_sequence": [
+        "Origin",
+        "52559",
+        "52211",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": null
+    }
+  },
+  {
+    "bto_name": "Bukit Merah",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.270142,
+      "lon": 103.807832
+    },
+    "destination": {
+      "lat": 1.34169243327446,
+      "lon": 103.842046133241,
+      "address": "10F BRADDELL HILL BRADDELL VIEW SINGAPORE 579725",
+      "postal_code": "579725"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 34.8,
+        "walking_time_minutes": 6.7,
+        "transit_time_minutes": 25.7,
+        "waiting_time_minutes": 2.4,
+        "transfers": 1,
+        "walk_distance_meters": 446.06,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "235",
+          "CC"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "52559",
+          "52211",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 40.0,
+        "walking_time_minutes": 11.3,
+        "transit_time_minutes": 24.0,
+        "waiting_time_minutes": 4.7,
+        "transfers": 1,
+        "walk_distance_meters": 765.47,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "230",
+          "CC"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "52559",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 34.8,
+      "walking_time_minutes": 6.7,
+      "transit_time_minutes": 25.7,
+      "waiting_time_minutes": 2.4,
+      "transfers": 1,
+      "walk_distance_meters": 446.06,
+      "transport_modes": [
+        "BUS",
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "235",
+        "CC"
+      ],
+      "first_transport_mode": "SUBWAY",
+      "stop_sequence": [
+        "Origin",
+        "52559",
+        "52211",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": null
+    }
+  },
+  {
+    "bto_name": "Toa Payoh",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.330322,
+      "lon": 103.838266
+    },
+    "destination": {
+      "lat": 1.34169243327446,
+      "lon": 103.842046133241,
+      "address": "10F BRADDELL HILL BRADDELL VIEW SINGAPORE 579725",
+      "postal_code": "579725"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 14.9,
+        "walking_time_minutes": 9.8,
+        "transit_time_minutes": 5.1,
+        "waiting_time_minutes": 0.0,
+        "transfers": 0,
+        "walk_distance_meters": 661.1,
+        "transport_modes": [
+          "BUS"
+        ],
+        "route_numbers": [
+          "141"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51021",
+          "51031",
+          "51051",
+          "52241",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51021",
+          "line": null,
+          "walk_time_min": 9.8
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 14.9,
+      "walking_time_minutes": 9.8,
+      "transit_time_minutes": 5.1,
+      "waiting_time_minutes": 0.0,
+      "transfers": 0,
+      "walk_distance_meters": 661.1,
+      "transport_modes": [
+        "BUS"
+      ],
+      "route_numbers": [
+        "141"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "51021",
+        "51031",
+        "51051",
+        "52241",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "51021",
+        "line": null,
+        "walk_time_min": 9.8
+      }
+    }
+  },
+  {
+    "bto_name": "Toa Payoh",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.330322,
+      "lon": 103.838266
+    },
+    "destination": {
+      "lat": 1.34169243327446,
+      "lon": 103.842046133241,
+      "address": "10F BRADDELL HILL BRADDELL VIEW SINGAPORE 579725",
+      "postal_code": "579725"
+    },
+    "time_period": "Daytime Off-Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 14.9,
+        "walking_time_minutes": 9.8,
+        "transit_time_minutes": 5.1,
+        "waiting_time_minutes": 0.0,
+        "transfers": 0,
+        "walk_distance_meters": 661.1,
+        "transport_modes": [
+          "BUS"
+        ],
+        "route_numbers": [
+          "141"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51021",
+          "51031",
+          "51051",
+          "52241",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51021",
+          "line": null,
+          "walk_time_min": 9.8
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 14.9,
+      "walking_time_minutes": 9.8,
+      "transit_time_minutes": 5.1,
+      "waiting_time_minutes": 0.0,
+      "transfers": 0,
+      "walk_distance_meters": 661.1,
+      "transport_modes": [
+        "BUS"
+      ],
+      "route_numbers": [
+        "141"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "51021",
+        "51031",
+        "51051",
+        "52241",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "51021",
+        "line": null,
+        "walk_time_min": 9.8
+      }
+    }
+  },
+  {
+    "bto_name": "Toa Payoh",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.330322,
+      "lon": 103.838266
+    },
+    "destination": {
+      "lat": 1.34169243327446,
+      "lon": 103.842046133241,
+      "address": "10F BRADDELL HILL BRADDELL VIEW SINGAPORE 579725",
+      "postal_code": "579725"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 14.9,
+        "walking_time_minutes": 9.8,
+        "transit_time_minutes": 5.1,
+        "waiting_time_minutes": 0.0,
+        "transfers": 0,
+        "walk_distance_meters": 661.1,
+        "transport_modes": [
+          "BUS"
+        ],
+        "route_numbers": [
+          "141"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51021",
+          "51031",
+          "51051",
+          "52241",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51021",
+          "line": null,
+          "walk_time_min": 9.8
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 14.9,
+      "walking_time_minutes": 9.8,
+      "transit_time_minutes": 5.1,
+      "waiting_time_minutes": 0.0,
+      "transfers": 0,
+      "walk_distance_meters": 661.1,
+      "transport_modes": [
+        "BUS"
+      ],
+      "route_numbers": [
+        "141"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "51021",
+        "51031",
+        "51051",
+        "52241",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "51021",
+        "line": null,
+        "walk_time_min": 9.8
+      }
+    }
   }
 ]

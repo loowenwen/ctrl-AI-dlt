@@ -353,15 +353,20 @@ async def scrape_bto(url: str):
 # --- Single BTO analysis ---
 @app.post("/analyze_bto")
 def analyze_bto(name: str, postal_code: str, time_period: str):
-    """Analyze transport accessibility for one BTO location."""
     result = analyze_bto_transport(name, postal_code, time_period)
+    if "error" in result:
+        raise HTTPException(status_code=400, detail=result["error"])
     return result
 
 # --- Analyze ALL BTOs ---
 @app.post("/analyze_all_btos")
-def analyze_all_btos(postal_code: str, time_period: str):
-    """Analyze transport accessibility for ALL BTO locations."""
+def analyze_all(postal_code: str, time_period: str):
     result = analyze_all_bto_transports(postal_code, time_period)
+
+    # If every single one failed
+    if all("error" in r for r in result.values()):
+        raise HTTPException(status_code=400, detail="All analyses failed")
+
     return result
 
 
@@ -369,8 +374,15 @@ def analyze_all_btos(postal_code: str, time_period: str):
 @app.post("/compare_btos")
 def compare_btos(destination_address: str, time_period: str):
     """Compare transport accessibility across multiple BTO projects."""
-    result = compare_bto_transports(destination_address, time_period)
-    return result
+    try:
+        result = compare_bto_transports(destination_address, time_period)
+        return result
+    except ValueError as e:
+        # Known/expected error (invalid time_period, no data, etc.)
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        # Unexpected error
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 # --- Get available BTOs (from scraped data) ---

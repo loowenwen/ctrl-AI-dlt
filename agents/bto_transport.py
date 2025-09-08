@@ -258,9 +258,9 @@ class BTOTransportAnalyzer:
         """Generate transport analysis reports for ALL BTOs in the dataset."""
 
         if not (postal_code.isdigit() and len(postal_code) == 6):
-            return {"error": "Postal code must be a 6-digit number"}
+            raise ValueError("Postal code must be a 6-digit number")
         if time_period not in self.config.time_periods:
-            return {"error": f"Invalid time period: {time_period}. Choose from {list(self.config.time_periods.keys())}"}
+            raise ValueError(f"Invalid time period: {time_period}. Choose from {list(self.config.time_periods.keys())}")
 
         btos = self.service.load_bto_locations()
         if not btos:
@@ -391,20 +391,21 @@ Provide a relative ranking of the provided BTO locations based purely on public 
     def analyze_single_bto(self, name: str, postal_code: str, time_period: str) -> Dict[str, str]:
         """Analyze transport accessibility for a single BTO by name."""
         if not (postal_code.isdigit() and len(postal_code) == 6):
-            return {"error": "Postal code must be a 6-digit number"}
+            raise ValueError("Postal code must be a 6-digit number")
         if time_period not in self.config.time_periods:
-            return {"error": f"Invalid time period: {time_period}. Choose from {list(self.config.time_periods.keys())}"}
+            raise ValueError(f"Invalid time period: {time_period}. Choose from {list(self.config.time_periods.keys())}")
         
         btos = self.service.get_bto_by_name(name)
         if not btos:
-            return {"error": f"BTO with name '{name}' not found"}
+            raise ValueError(f"BTO with name '{name}' not found")
         if len(btos) > 1:
-            return {"error": f"Multiple BTOs found for '{name}'. Please specify lat and lon."}
+            raise ValueError(f"Multiple BTOs found for '{name}'. Please specify lat and lon.")
+
         
         bto = btos[0]
         transport_data = self.service.get_transport_data(bto["lat"], bto["lon"], postal_code, time_period)
         if "error" in transport_data:
-            return {"error": transport_data["error"]}
+            raise ValueError(transport_data["error"])
 
         formatted_data = self.service.format_route_data(transport_data, bto["name"], bto.get("flatType", "N/A"))
         self.service.save_comparison_data(formatted_data)
@@ -473,10 +474,12 @@ Focus ONLY on transport factors. Use actual data from the transport information 
     def compare_btos(self, destination_address: str, time_period: str) -> Dict[str, str]:
         """Compare transport accessibility across multiple BTOs."""
         if time_period not in self.config.time_periods:
-            return {"error": f"Invalid time period: {time_period}. Choose from {list(self.config.time_periods.keys())}"}
+            raise ValueError(f"Invalid time period: {time_period}. Choose from {list(self.config.time_periods.keys())}")
+
+        # Load saved comparison data
         all_transport_data = self.service.load_comparison_data()
         if not all_transport_data:
-            return {"error": "No transport data available for comparison"}
+            raise ValueError("No transport data available for comparison")
         analysis_prompt = f"""
 You are a Singapore public transport specialist analyzing BTO locations for commuting accessibility.
 

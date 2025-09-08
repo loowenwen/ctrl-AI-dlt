@@ -45,15 +45,16 @@ export default function BTOIntentDialog({ btoProject, flatType }: BTOIntentDialo
   
   const navigate = useNavigate();
 
-  // Load available flat types for the selected BTO project
+  // Load available flat types for the selected BTO project,
+  // or provide sensible defaults when no project is selected.
   useEffect(() => {
     async function loadProjectData() {
       try {
         const response = await fetch('/api/bto-data');
         const projects: BTOProjectInfo[] = await response.json();
-        
+
         // Find the project that matches our btoProject name
-        const project = projects.find(p => 
+        const project = projects.find(p =>
           p.properties.description[0].town === btoProject
         );
 
@@ -62,13 +63,16 @@ export default function BTOIntentDialog({ btoProject, flatType }: BTOIntentDialo
           const types = project.properties.description[0].flatType
             .split(", ")
             .map(type => type.replace(" Flexi", "")); // Normalize "2-Room Flexi" to "2-Room"
-          
+
           setAvailableFlatTypes(types);
-          
+
           // If we have a default flatType and it's available, select it
           if (flatType && types.includes(flatType)) {
             setSelectedFlatType(flatType);
           }
+        } else {
+          // No specific project selected/found: show common flat types
+          setAvailableFlatTypes(["2-Room", "3-Room", "4-Room", "5-Room", "3Gen"]);
         }
       } catch (error) {
         console.error("Error loading BTO project data:", error);
@@ -79,6 +83,9 @@ export default function BTOIntentDialog({ btoProject, flatType }: BTOIntentDialo
 
     if (btoProject) {
       loadProjectData();
+    } else {
+      // If user has no BTO in mind, populate default options
+      setAvailableFlatTypes(["2-Room", "3-Room", "4-Room", "5-Room", "3Gen"]);
     }
   }, [btoProject, flatType]);
   const occupantStatuses = [
@@ -107,23 +114,27 @@ export default function BTOIntentDialog({ btoProject, flatType }: BTOIntentDialo
   }
 
   const generatedText = useMemo(() => {
-    if (!btoProject || !selectedFlatType || !occupant1Age || !occupant1Status) {
-      return "";
+    let parts: string[] = [];
+
+    if (occupant1Age || occupant1Status) {
+      const age = occupant1Age ? `${occupant1Age} years old` : undefined;
+      const status = occupant1Status ? occupant1Status.toLowerCase() : undefined;
+      const who = [age, status].filter(Boolean).join(" and ");
+      if (who) parts.push(`I'm ${who}.`);
     }
 
-    let text = `I'm ${occupant1Age} years old and ${occupant1Status.toLowerCase()}. `;
-    
     if (occupant2Age && occupant2Status) {
-      text += `My partner is ${occupant2Age} years old and ${occupant2Status.toLowerCase()}. `;
+      parts.push(`My partner is ${occupant2Age} years old and ${occupant2Status.toLowerCase()}.`);
     }
-    
-    text += `We're interested in a ${selectedFlatType} flat at ${btoProject}. `;
-    
-    if (query) {
-      text += query;
+
+    if (selectedFlatType) {
+      const where = btoProject ? ` at ${btoProject}` : "";
+      parts.push(`We're interested in a ${selectedFlatType} flat${where}.`);
     }
-    
-    return text;
+
+    if (query) parts.push(query);
+
+    return parts.join(" ");
   }, [btoProject, selectedFlatType, occupant1Age, occupant1Status, occupant2Age, occupant2Status, query]);
 
   const payload = useMemo(() => {
@@ -145,16 +156,13 @@ export default function BTOIntentDialog({ btoProject, flatType }: BTOIntentDialo
   }, [generatedText, btoProject, selectedFlatType, occupant1Age, occupant1Status, occupant2Age, occupant2Status]);
   
   async function onSubmit() {
-    if (!btoProject || !selectedFlatType || !occupant1Age || !occupant1Status) {
-      return;
-    }
-
-    navigate("/results", { 
-      state: { 
+    // Allow navigation even when no specific BTO project is selected.
+    navigate("/results", {
+      state: {
         payload,
         btoProject,
-        selectedFlatType 
-      } 
+        selectedFlatType,
+      },
     });
     setOpen(false);
     reset();

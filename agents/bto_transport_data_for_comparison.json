@@ -3777,5 +3777,146 @@
         "walk_time_min": 14.4
       }
     }
+  },
+  {
+    "bto_name": "Bishan",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.345934,
+      "lon": 103.849374
+    },
+    "destination": {
+      "lat": 1.33100823526591,
+      "lon": 103.938066838998,
+      "address": "116 BEDOK NORTH ROAD SINGAPORE 460116",
+      "postal_code": "460116"
+    },
+    "time_period": "Nighttime Off-Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 51.2,
+        "walking_time_minutes": 19.1,
+        "transit_time_minutes": 25.7,
+        "waiting_time_minutes": 6.5,
+        "transfers": 2,
+        "walk_distance_meters": 1274.17,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "CC",
+          "222",
+          "EW"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "84031",
+          "84041",
+          "84051",
+          "84289",
+          "84249",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 51.5,
+        "walking_time_minutes": 22.4,
+        "transit_time_minutes": 22.1,
+        "waiting_time_minutes": 7.0,
+        "transfers": 2,
+        "walk_distance_meters": 1480.54,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "CC",
+          "46",
+          "DT"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "84209",
+          "84529",
+          "84221",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 61.1,
+        "walking_time_minutes": 26.9,
+        "transit_time_minutes": 30.5,
+        "waiting_time_minutes": 3.7,
+        "transfers": 1,
+        "walk_distance_meters": 1771.24,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "CC",
+          "67"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "82011",
+          "82032",
+          "82061",
+          "83011",
+          "83031",
+          "83062",
+          "83081",
+          "84011",
+          "84021",
+          "84031",
+          "84041",
+          "84191",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 51.2,
+      "walking_time_minutes": 19.1,
+      "transit_time_minutes": 25.7,
+      "waiting_time_minutes": 6.5,
+      "transfers": 2,
+      "walk_distance_meters": 1274.17,
+      "transport_modes": [
+        "SUBWAY",
+        "BUS"
+      ],
+      "route_numbers": [
+        "CC",
+        "222",
+        "EW"
+      ],
+      "first_transport_mode": "SUBWAY",
+      "stop_sequence": [
+        "Origin",
+        "84031",
+        "84041",
+        "84051",
+        "84289",
+        "84249",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": null
+    }
   }
 ]

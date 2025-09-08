@@ -54,13 +54,12 @@ SYSTEM_PROMPT=(
         "Make sure the sentiment is regarding the prompter (e.g high demand btos may be low sentiment to prompter "
         "as chances of receiving bto is lower, High cost may be low sentiment as expensive, good facilities is good "
         "sentiment as dont need to travel far to use facilities, etc).\n"
-        "Each document begins with a tag like `[N|URL]` or `[N]`. When you cite evidence, include `idx`=N. "
+        "Each document begins with a tag like `[N|URL]` or `[N]`. When you cite evidence, include the direct url. [URL=...]"
         "If a URL is present in the tag, include the same `url`; otherwise set `url` to an empty string.\n"
-        "Include evidence and referenced links in your answer. Give as much details as possible."
+        "Include evidence and referenced URLS (ACTUAL URLS) in your answer. Give as much details as possible. DONT REFERENCE THE AGENTS BUT THE ACTUAL URLS ONLY"
         "Rules:\n"
         "- Keep quotes short and verbatim from the text.\n"
         "- Calibrate scores: positive≈0.3..1, negative≈-0.3..-1, mixed≈-0.29..0.29.\n"
-        "NOTE: document may contain SPELLING ERRORS. (e.g Rich is actually Ridge), please fix the spelling errors!"
 )
 
 JUNK_LINE_REGEXES = [

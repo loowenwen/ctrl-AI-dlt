@@ -71,17 +71,17 @@ builder.add_edge("text_extract", "sentiment")
 graph = builder.build()
 
 
-topic={
-        "age": 29,
-        "flat_type": "4-room",
-        "location": "Toa Payoh",
-        "intent": "HDB BTO July 2025 launch sentiment",
-        "focus": ["TikTok", "YouTube", "reviews", "guides", "explainers"],
-        "concerns": ["MRT", "schools", "resale value"],
-        }
+# topic={
+#         "age": 29,
+#         "flat_type": "4-room",
+#         "location": "Toa Payoh",
+#         "intent": "HDB BTO July 2025 launch sentiment",
+#         "focus": ["TikTok", "YouTube", "reviews", "guides", "explainers"],
+#         "concerns": ["MRT", "schools", "resale value"],
+#         }
 
-# prompt="Tell me about how people feel about Toa Payoh July 2025 HDB BTO launch"
-# result = graph(str(topic))
+# prompt="What are some BTO launches suitable for a broke student? Give me videos"
+# result = graph(prompt)
 
 # # Access the results
 # print(f"\nStatus: {result.status}")

@@ -47,7 +47,7 @@ model = BedrockModel(
 
 SYSTEM_PROMPT = (
     "Use the tool [download_video_transcribe] to get the video transcript for the given urls. Dont download more than 10."
-    "Then, based on the transcript, provide a concise summary of the video content, focusing on key points and overall sentiment."
+    "Then, based on the transcript, provide a concise summary of the video content, focusing on key points and overall sentiment. Include video url in your output."
 )
 
 def _run(cmd: str):

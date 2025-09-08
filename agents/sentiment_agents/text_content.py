@@ -39,9 +39,7 @@ model = BedrockModel(
 
 SYSTEM_PROMPT=(
         """You are a text extractor. Extract ALL text word for word from the websearch agent results. Exclude video evidence.
-        Include evidence and referenced links in your answer.
-        Rules:
-        - Ensure JSON parses without errors; do NOT use code fences.
+        Include evidence and referenced links (URLS) in your answer. USE LINKS ALWAYS. Label with [URL].
        """
 )
 

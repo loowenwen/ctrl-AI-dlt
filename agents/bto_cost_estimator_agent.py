@@ -407,6 +407,22 @@ class EnhancedBTOCostEstimator:
                     flat_type=flat_type,
                     exercise_date=exercise_iso,
                 )
+                # Map trend to the expected enum: rising | stable | falling | null
+                trend_raw = est.historical_trend
+                if isinstance(trend_raw, str):
+                    t = trend_raw.lower()
+                    if t == "increasing":
+                        trend_val = "rising"
+                    elif t == "decreasing":
+                        trend_val = "falling"
+                    elif t == "stable":
+                        trend_val = "stable"
+                    else:
+                        # map non-enum statuses (e.g., statistical_average, insufficient_data) to null
+                        trend_val = None
+                else:
+                    trend_val = None
+
                 results[key] = {
                     "projectLocation": est.project_location,
                     "flatType": est.flat_type,
@@ -417,7 +433,7 @@ class EnhancedBTOCostEstimator:
                     "ciLower": float(est.confidence_interval[0]) if est.confidence_interval[0] is not None else None,
                     "ciUpper": float(est.confidence_interval[1]) if est.confidence_interval[1] is not None else None,
                     "sampleSize": int(est.sample_size),
-                    "trend": est.historical_trend,
+                    "trend": trend_val,
                     "methodology": est.methodology,
                 }
             except Exception as e:
@@ -432,7 +448,7 @@ class EnhancedBTOCostEstimator:
                     "ciLower": None,
                     "ciUpper": None,
                     "sampleSize": 0,
-                    "trend": "error",
+                    "trend": None,
                     "methodology": "unavailable",
                 }
         return results

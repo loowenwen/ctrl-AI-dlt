@@ -1,13 +1,25 @@
 import { useLocation } from "react-router-dom";
+import { useState } from "react";
 import BudgetCard from "./BudgetCard";
 import TransportCard from "./TransportCard";
 import SentimentReport from "@/components/SentimentReport";
+import AffordabilityCard from "./AffordabilityCard";
+
+interface BudgetData {
+  max_hdb_loan: number;
+  total_budget: number;
+  cpf_used_in_budget: number;
+  retained_oa: number;
+  session_id?: string;
+}
 
 export default function Results() {
   const location = useLocation();
   const incomingPayload = (location.state as any)?.payload;
   const btoProject = (location.state as any)?.btoProject;
+  const selectedFlatType = (location.state as any)?.selectedFlatType;
   const text: string | undefined = incomingPayload?.text;
+  const [budgetData, setBudgetData] = useState<BudgetData | null>(null);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
@@ -20,9 +32,16 @@ export default function Results() {
             <SentimentReport initialText={text} />
           </div>
 
-          {/* RIGHT: Budget + Transport */}
+          {/* RIGHT: Budget + Transport + Affordability */}
           <aside className="lg:col-span-4 space-y-6 mt-9.5">
-            <BudgetCard />
+            <BudgetCard onBudgetCalculated={setBudgetData} />
+            <AffordabilityCard 
+              totalBudget={budgetData?.total_budget}
+              defaultBTO={btoProject ? {
+                name: btoProject,
+                flatType: selectedFlatType
+              } : undefined}
+            />
             <TransportCard btoProject={btoProject}/>
           </aside>
         </div>

@@ -2247,5 +2247,1183 @@
         "walk_time_min": 9.8
       }
     }
+  },
+  {
+    "bto_name": "Bishan",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.345934,
+      "lon": 103.849374
+    },
+    "destination": {
+      "lat": 1.27573568143134,
+      "lon": 103.845703218601,
+      "address": "10 ANSON ROAD CONSULATE-GENERAL OF THE REPUBLIC OF MALTA SINGAPORE 079903",
+      "postal_code": "079903"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 38.7,
+        "walking_time_minutes": 17.0,
+        "transit_time_minutes": 18.5,
+        "waiting_time_minutes": 3.2,
+        "transfers": 1,
+        "walk_distance_meters": 1123.41,
+        "transport_modes": [
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "NS",
+          "EW"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 38.8,
+        "walking_time_minutes": 14.1,
+        "transit_time_minutes": 19.4,
+        "waiting_time_minutes": 5.2,
+        "transfers": 2,
+        "walk_distance_meters": 919.92,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "NS",
+          "54",
+          "EW"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "53221",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "53221",
+          "line": null,
+          "walk_time_min": 14.1
+        }
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 40.5,
+        "walking_time_minutes": 13.2,
+        "transit_time_minutes": 19.7,
+        "waiting_time_minutes": 7.6,
+        "transfers": 2,
+        "walk_distance_meters": 866.69,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "EW",
+          "NS",
+          "410G"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "53401",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "53401",
+          "line": null,
+          "walk_time_min": 13.2
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 38.7,
+      "walking_time_minutes": 17.0,
+      "transit_time_minutes": 18.5,
+      "waiting_time_minutes": 3.2,
+      "transfers": 1,
+      "walk_distance_meters": 1123.41,
+      "transport_modes": [
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "NS",
+        "EW"
+      ],
+      "first_transport_mode": "SUBWAY",
+      "stop_sequence": [
+        "Origin",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": null
+    }
+  },
+  {
+    "bto_name": "Toa Payoh",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.330322,
+      "lon": 103.838266
+    },
+    "destination": {
+      "lat": 1.29783948334728,
+      "lon": 103.845278202782,
+      "address": "9 PENANG ROAD SINGAPORE 238459",
+      "postal_code": "238459"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 23.8,
+        "walking_time_minutes": 8.2,
+        "transit_time_minutes": 12.9,
+        "waiting_time_minutes": 2.7,
+        "transfers": 1,
+        "walk_distance_meters": 509.61,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "NS",
+          "166"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 8.2
+        }
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 24.4,
+        "walking_time_minutes": 8.2,
+        "transit_time_minutes": 12.9,
+        "waiting_time_minutes": 3.4,
+        "transfers": 1,
+        "walk_distance_meters": 509.61,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "141",
+          "NS"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 8.2
+        }
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 24.5,
+        "walking_time_minutes": 6.9,
+        "transit_time_minutes": 15.4,
+        "waiting_time_minutes": 2.2,
+        "transfers": 1,
+        "walk_distance_meters": 418.89,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "NS",
+          "54"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "50037",
+          "50069",
+          "40129",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 6.9
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 23.8,
+      "walking_time_minutes": 8.2,
+      "transit_time_minutes": 12.9,
+      "waiting_time_minutes": 2.7,
+      "transfers": 1,
+      "walk_distance_meters": 509.61,
+      "transport_modes": [
+        "BUS",
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "NS",
+        "166"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "51039",
+        "51029",
+        "51019",
+        "50059",
+        "50049",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "51039",
+        "line": null,
+        "walk_time_min": 8.2
+      }
+    }
+  },
+  {
+    "bto_name": "Toa Payoh",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.330322,
+      "lon": 103.838266
+    },
+    "destination": {
+      "lat": 1.29783948334728,
+      "lon": 103.845278202782,
+      "address": "9 PENANG ROAD SINGAPORE 238459",
+      "postal_code": "238459"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 23.8,
+        "walking_time_minutes": 8.2,
+        "transit_time_minutes": 12.9,
+        "waiting_time_minutes": 2.7,
+        "transfers": 1,
+        "walk_distance_meters": 509.61,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "166",
+          "NS"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 8.2
+        }
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 24.4,
+        "walking_time_minutes": 8.2,
+        "transit_time_minutes": 12.9,
+        "waiting_time_minutes": 3.4,
+        "transfers": 1,
+        "walk_distance_meters": 509.61,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "141",
+          "NS"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 8.2
+        }
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 24.5,
+        "walking_time_minutes": 6.9,
+        "transit_time_minutes": 15.4,
+        "waiting_time_minutes": 2.2,
+        "transfers": 1,
+        "walk_distance_meters": 418.89,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "54",
+          "NS"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "50037",
+          "50069",
+          "40129",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 6.9
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 23.8,
+      "walking_time_minutes": 8.2,
+      "transit_time_minutes": 12.9,
+      "waiting_time_minutes": 2.7,
+      "transfers": 1,
+      "walk_distance_meters": 509.61,
+      "transport_modes": [
+        "BUS",
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "166",
+        "NS"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "51039",
+        "51029",
+        "51019",
+        "50059",
+        "50049",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "51039",
+        "line": null,
+        "walk_time_min": 8.2
+      }
+    }
+  },
+  {
+    "bto_name": "Bishan",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.345934,
+      "lon": 103.849374
+    },
+    "destination": {
+      "lat": 1.27573568143134,
+      "lon": 103.845703218601,
+      "address": "10 ANSON ROAD CONSULATE-GENERAL OF THE REPUBLIC OF MALTA SINGAPORE 079903",
+      "postal_code": "079903"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 38.7,
+        "walking_time_minutes": 17.0,
+        "transit_time_minutes": 18.5,
+        "waiting_time_minutes": 3.2,
+        "transfers": 1,
+        "walk_distance_meters": 1123.41,
+        "transport_modes": [
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "NS",
+          "EW"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 38.8,
+        "walking_time_minutes": 14.1,
+        "transit_time_minutes": 19.4,
+        "waiting_time_minutes": 5.2,
+        "transfers": 2,
+        "walk_distance_meters": 919.92,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "54",
+          "NS",
+          "EW"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "53221",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "53221",
+          "line": null,
+          "walk_time_min": 14.1
+        }
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 40.5,
+        "walking_time_minutes": 13.2,
+        "transit_time_minutes": 19.7,
+        "waiting_time_minutes": 7.6,
+        "transfers": 2,
+        "walk_distance_meters": 866.69,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "NS",
+          "EW",
+          "410G"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "53401",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "53401",
+          "line": null,
+          "walk_time_min": 13.2
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 38.7,
+      "walking_time_minutes": 17.0,
+      "transit_time_minutes": 18.5,
+      "waiting_time_minutes": 3.2,
+      "transfers": 1,
+      "walk_distance_meters": 1123.41,
+      "transport_modes": [
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "NS",
+        "EW"
+      ],
+      "first_transport_mode": "SUBWAY",
+      "stop_sequence": [
+        "Origin",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": null
+    }
+  },
+  {
+    "bto_name": "Toa Payoh",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.330322,
+      "lon": 103.838266
+    },
+    "destination": {
+      "lat": 1.27573568143134,
+      "lon": 103.845703218601,
+      "address": "10 ANSON ROAD CONSULATE-GENERAL OF THE REPUBLIC OF MALTA SINGAPORE 079903",
+      "postal_code": "079903"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 33.1,
+        "walking_time_minutes": 8.4,
+        "transit_time_minutes": 18.1,
+        "waiting_time_minutes": 6.5,
+        "transfers": 2,
+        "walk_distance_meters": 535.1,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "NS",
+          "EW",
+          "141"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 8.4
+        }
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 36.2,
+        "walking_time_minutes": 7.1,
+        "transit_time_minutes": 20.7,
+        "waiting_time_minutes": 8.5,
+        "transfers": 2,
+        "walk_distance_meters": 444.38,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "54",
+          "NS",
+          "EW"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "50037",
+          "50069",
+          "40129",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 7.1
+        }
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 36.6,
+        "walking_time_minutes": 10.8,
+        "transit_time_minutes": 21.8,
+        "waiting_time_minutes": 4.0,
+        "transfers": 1,
+        "walk_distance_meters": 660.31,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "851",
+          "EW"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "50038",
+          "50029",
+          "50019",
+          "40109",
+          "40019",
+          "07539",
+          "07589",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 10.8
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 33.1,
+      "walking_time_minutes": 8.4,
+      "transit_time_minutes": 18.1,
+      "waiting_time_minutes": 6.5,
+      "transfers": 2,
+      "walk_distance_meters": 535.1,
+      "transport_modes": [
+        "BUS",
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "NS",
+        "EW",
+        "141"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "51039",
+        "51029",
+        "51019",
+        "50059",
+        "50049",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "51039",
+        "line": null,
+        "walk_time_min": 8.4
+      }
+    }
+  },
+  {
+    "bto_name": "Toa Payoh",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.330322,
+      "lon": 103.838266
+    },
+    "destination": {
+      "lat": 1.27573568143134,
+      "lon": 103.845703218601,
+      "address": "10 ANSON ROAD CONSULATE-GENERAL OF THE REPUBLIC OF MALTA SINGAPORE 079903",
+      "postal_code": "079903"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 33.1,
+        "walking_time_minutes": 8.4,
+        "transit_time_minutes": 18.1,
+        "waiting_time_minutes": 6.5,
+        "transfers": 2,
+        "walk_distance_meters": 535.1,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "EW",
+          "NS",
+          "141"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 8.4
+        }
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 36.2,
+        "walking_time_minutes": 7.1,
+        "transit_time_minutes": 20.7,
+        "waiting_time_minutes": 8.5,
+        "transfers": 2,
+        "walk_distance_meters": 444.38,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "54",
+          "NS",
+          "EW"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "50037",
+          "50069",
+          "40129",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 7.1
+        }
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 36.6,
+        "walking_time_minutes": 10.8,
+        "transit_time_minutes": 21.8,
+        "waiting_time_minutes": 4.0,
+        "transfers": 1,
+        "walk_distance_meters": 660.31,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "851",
+          "EW"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "50038",
+          "50029",
+          "50019",
+          "40109",
+          "40019",
+          "07539",
+          "07589",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 10.8
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 33.1,
+      "walking_time_minutes": 8.4,
+      "transit_time_minutes": 18.1,
+      "waiting_time_minutes": 6.5,
+      "transfers": 2,
+      "walk_distance_meters": 535.1,
+      "transport_modes": [
+        "SUBWAY",
+        "BUS"
+      ],
+      "route_numbers": [
+        "EW",
+        "NS",
+        "141"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "51039",
+        "51029",
+        "51019",
+        "50059",
+        "50049",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "51039",
+        "line": null,
+        "walk_time_min": 8.4
+      }
+    }
+  },
+  {
+    "bto_name": "Toa Payoh",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.330322,
+      "lon": 103.838266
+    },
+    "destination": {
+      "lat": 1.29783948334728,
+      "lon": 103.845278202782,
+      "address": "9 PENANG ROAD SINGAPORE 238459",
+      "postal_code": "238459"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 23.8,
+        "walking_time_minutes": 8.2,
+        "transit_time_minutes": 12.9,
+        "waiting_time_minutes": 2.7,
+        "transfers": 1,
+        "walk_distance_meters": 509.61,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "NS",
+          "166"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 8.2
+        }
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 24.4,
+        "walking_time_minutes": 8.2,
+        "transit_time_minutes": 12.9,
+        "waiting_time_minutes": 3.4,
+        "transfers": 1,
+        "walk_distance_meters": 509.61,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "NS",
+          "141"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 8.2
+        }
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 24.5,
+        "walking_time_minutes": 6.9,
+        "transit_time_minutes": 15.4,
+        "waiting_time_minutes": 2.2,
+        "transfers": 1,
+        "walk_distance_meters": 418.89,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "54",
+          "NS"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "50037",
+          "50069",
+          "40129",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 6.9
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 23.8,
+      "walking_time_minutes": 8.2,
+      "transit_time_minutes": 12.9,
+      "waiting_time_minutes": 2.7,
+      "transfers": 1,
+      "walk_distance_meters": 509.61,
+      "transport_modes": [
+        "SUBWAY",
+        "BUS"
+      ],
+      "route_numbers": [
+        "NS",
+        "166"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "51039",
+        "51029",
+        "51019",
+        "50059",
+        "50049",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "51039",
+        "line": null,
+        "walk_time_min": 8.2
+      }
+    }
+  },
+  {
+    "bto_name": "Toa Payoh",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.330322,
+      "lon": 103.838266
+    },
+    "destination": {
+      "lat": 1.30083890839245,
+      "lon": 103.839434733899,
+      "address": "181 ORCHARD ROAD ORCHARD CENTRAL SINGAPORE 238896",
+      "postal_code": "238896"
+    },
+    "time_period": "Morning Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 24.1,
+        "walking_time_minutes": 10.1,
+        "transit_time_minutes": 11.3,
+        "waiting_time_minutes": 2.7,
+        "transfers": 1,
+        "walk_distance_meters": 629.5,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "NS",
+          "166"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 10.1
+        }
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 24.7,
+        "walking_time_minutes": 10.1,
+        "transit_time_minutes": 11.3,
+        "waiting_time_minutes": 3.4,
+        "transfers": 1,
+        "walk_distance_meters": 629.5,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "NS",
+          "141"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 10.1
+        }
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 24.8,
+        "walking_time_minutes": 8.7,
+        "transit_time_minutes": 13.9,
+        "waiting_time_minutes": 2.2,
+        "transfers": 1,
+        "walk_distance_meters": 538.78,
+        "transport_modes": [
+          "SUBWAY",
+          "BUS"
+        ],
+        "route_numbers": [
+          "54",
+          "NS"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "51039",
+          "51029",
+          "51019",
+          "50059",
+          "50049",
+          "50037",
+          "50069",
+          "40129",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "51039",
+          "line": null,
+          "walk_time_min": 8.7
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 24.1,
+      "walking_time_minutes": 10.1,
+      "transit_time_minutes": 11.3,
+      "waiting_time_minutes": 2.7,
+      "transfers": 1,
+      "walk_distance_meters": 629.5,
+      "transport_modes": [
+        "SUBWAY",
+        "BUS"
+      ],
+      "route_numbers": [
+        "NS",
+        "166"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "51039",
+        "51029",
+        "51019",
+        "50059",
+        "50049",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "51039",
+        "line": null,
+        "walk_time_min": 10.1
+      }
+    }
   }
 ]

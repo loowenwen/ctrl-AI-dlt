@@ -165,7 +165,10 @@ export default function Home() {
                   <div className="space-y-1">
                     <div className="font-semibold flex items-center gap-2">
                       {l.name}
-                      <IncomeDetailsPopup btoProject={l.name}/>
+                      <IncomeDetailsPopup 
+                        btoProject={l.name} 
+                        flatType={flatFilter === 'all' ? undefined : flatFilter}
+                      />
                     </div>
                     <div className="text-xs text-gray-600">{l.town}</div>
                     <div className="text-xs">

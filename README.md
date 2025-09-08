@@ -1,7 +1,7 @@
-# AgentBTO: Re-Imagining Your Home Buying Decisions with AI
+# Agent-BTOgether: Re-Imagining Your Home Buying Decisions with AI
 Group: **ctrl-AI-dlt**
 
-AgentBTO is a one‑stop, agentic AI application that helps Singapore homebuyers research, evaluate, and decide on HDB BTO projects with confidence. It consolidates affordability, cost estimation, public sentiment, and transport connectivity into a single workflow backed by a FastAPI backend and a React (Vite) frontend.
+Agent-BTOgether is a one‑stop, agentic AI application that helps Singapore homebuyers research, evaluate, and decide on HDB BTO projects with confidence. It consolidates affordability, cost estimation, public sentiment, and transport connectivity into a single workflow backed by a FastAPI backend and a React (Vite) frontend.
 
 ## Table of Contents
 1. Overview

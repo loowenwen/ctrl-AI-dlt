@@ -6,11 +6,12 @@ import SentimentReport from "@/components/SentimentReport";
 export default function Results() {
   const location = useLocation();
   const incomingPayload = (location.state as any)?.payload;
+  const btoProject = (location.state as any)?.btoProject;
   const text: string | undefined = incomingPayload?.text;
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-7xl">
         <h1 className="mb-4 text-2xl md:text-3xl font-bold">Analysis Results</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -20,9 +21,9 @@ export default function Results() {
           </div>
 
           {/* RIGHT: Budget + Transport */}
-          <aside className="lg:col-span-4 space-y-6 mt-9">
+          <aside className="lg:col-span-4 space-y-6 mt-9.5">
             <BudgetCard />
-            <TransportCard />
+            <TransportCard btoProject={btoProject}/>
           </aside>
         </div>
       </div>

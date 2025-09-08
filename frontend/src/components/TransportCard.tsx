@@ -190,7 +190,7 @@ export default function TransportCard({ btoProject }: Props) {
           <div className="flex justify-end">
             <Button onClick={onQuery} disabled={!canQuery || isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              {isLoading ? (isAll ? "Analyzing all…" : "Analyzing…") : "Query"}
+              {isLoading ? "Running Transportation Agent" : "Query"}
             </Button>
           </div>
         </div>

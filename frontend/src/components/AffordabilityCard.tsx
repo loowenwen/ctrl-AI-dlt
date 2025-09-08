@@ -65,22 +65,11 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
         
         // If default BTO is provided, auto-add it to the list
         if (defaultBTO && defaultBTO.flatType) {
-          try {
-            const priceResponse = await fetch(`/api/estimate-price/${encodeURIComponent(defaultBTO.name)}/${encodeURIComponent(defaultBTO.flatType)}`);
-            if (priceResponse.ok) {
-              const priceData = await priceResponse.json();
-              setSelectedBTOs([{
-                project: defaultBTO.name,
-                flatType: defaultBTO.flatType,
-                price: priceData.estimated_price
-              }]);
-            }
-          } catch (error) {
-            console.error('Failed to load default BTO price:', error);
-            // Still set the project and flat type for manual selection
-            setSelectedProject(defaultBTO.name);
-            setSelectedFlatType(defaultBTO.flatType);
-          }
+          // Do not prefetch prices; just prefill the selection
+          setSelectedBTOs([{
+            project: defaultBTO.name,
+            flatType: defaultBTO.flatType,
+          }]);
         }
       } catch (error) {
         console.error('Failed to load BTO data:', error);
@@ -110,27 +99,16 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
   const addBTO = useCallback(async () => {
     if (!selectedProject || !selectedFlatType) return;
 
-    try {
-      // Get price estimate
-      const response = await fetch(`/api/estimate-price/${encodeURIComponent(selectedProject)}/${encodeURIComponent(selectedFlatType)}`);
-      if (!response.ok) {
-        throw new Error("Failed to get price estimate");
-      }
-      const data = await response.json();
-      
-      setSelectedBTOs(current => [...current, {
-        project: selectedProject,
-        flatType: selectedFlatType,
-        price: data.estimated_price
-      }]);
+    // Do not fetch price here; defer to affordability check
+    setSelectedBTOs(current => [...current, {
+      project: selectedProject,
+      flatType: selectedFlatType,
+    }]);
 
-      // Reset selections
-      setSelectedProject("");
-      setSelectedFlatType("");
-      setError(null);
-    } catch (error) {
-      setError("Failed to get price estimate for selected BTO");
-    }
+    // Reset selections
+    setSelectedProject("");
+    setSelectedFlatType("");
+    setError(null);
   }, [selectedProject, selectedFlatType]);
 
   // Remove BTO
@@ -148,16 +126,42 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
     setResults(null);
     
     try {
+      // First, get estimates for all selected BTOs
+      const selections = selectedBTOs.reduce((acc: any, bto, idx) => {
+        acc[`choice${idx}`] = {
+          town: bto.project,
+          flatType: bto.flatType,
+          exerciseDate: 'October 2025',
+        };
+        return acc;
+      }, {} as Record<string, any>);
+
+      const estRes = await fetch('/api/cost_estimates', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selections }),
+      });
+      if (!estRes.ok) throw new Error('Failed to estimate prices');
+      const estJson = await estRes.json();
+      const btosWithPrices = Object.values(estJson?.results || {})
+        .filter((r: any) => typeof r?.estimatedPrice === 'number')
+        .map((r: any) => ({
+          name: r.projectLocation,
+          flatType: r.flatType,
+          price: r.estimatedPrice,
+        }));
+
+      if (!btosWithPrices.length) {
+        throw new Error('No valid price estimates available');
+      }
+
+      // Then, run affordability against these estimates
       const response = await fetch("/api/affordability", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           total_budget: totalBudget,
-          btos: selectedBTOs.map(bto => ({
-            name: bto.project,
-            flatType: bto.flatType,
-            price: bto.price
-          }))
+          btos: btosWithPrices,
         }),
       });
 
@@ -240,9 +244,7 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
                 <div key={index} className="flex items-center justify-between bg-gray-50 p-3 rounded-lg">
                   <div className="space-y-1">
                     <div className="font-medium">{bto.project}</div>
-                    <div className="text-sm text-gray-500">
-                      {bto.flatType} - ${bto.price?.toLocaleString() || 'Calculating...'}
-                    </div>
+                    <div className="text-sm text-gray-500">{bto.flatType}</div>
                   </div>
                   <Button
                     variant="ghost"
@@ -265,7 +267,7 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Checking...
+                  Running Affordability Agent
                 </>
               ) : (
                 'Check Affordability'

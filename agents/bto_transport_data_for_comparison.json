@@ -3425,5 +3425,357 @@
         "walk_time_min": 10.1
       }
     }
+  },
+  {
+    "bto_name": "Bukit Merah",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.270142,
+      "lon": 103.807832
+    },
+    "destination": {
+      "lat": 1.33100823526591,
+      "lon": 103.938066838998,
+      "address": "116 BEDOK NORTH ROAD SINGAPORE 460116",
+      "postal_code": "460116"
+    },
+    "time_period": "Nighttime Off-Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 65.8,
+        "walking_time_minutes": 14.4,
+        "transit_time_minutes": 46.0,
+        "waiting_time_minutes": 5.4,
+        "transfers": 2,
+        "walk_distance_meters": 925.14,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "14",
+          "10",
+          "EW"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "14169",
+          "14159",
+          "14139",
+          "14129",
+          "14119",
+          "14109",
+          "14089",
+          "14069",
+          "05641",
+          "03222",
+          "85099",
+          "84069",
+          "84289",
+          "84249",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "14169",
+          "line": null,
+          "walk_time_min": 14.4
+        }
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 69.1,
+        "walking_time_minutes": 9.5,
+        "transit_time_minutes": 51.6,
+        "waiting_time_minutes": 8.1,
+        "transfers": 2,
+        "walk_distance_meters": 618.54,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "CC",
+          "222",
+          "EW"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "84031",
+          "84041",
+          "84051",
+          "84289",
+          "84249",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 71.1,
+        "walking_time_minutes": 8.7,
+        "transit_time_minutes": 53.2,
+        "waiting_time_minutes": 9.2,
+        "transfers": 2,
+        "walk_distance_meters": 553.72,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "222",
+          "100",
+          "EW"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "14171",
+          "15041",
+          "15051",
+          "18011",
+          "11511",
+          "11021",
+          "11031",
+          "11041",
+          "11051",
+          "84031",
+          "84041",
+          "84051",
+          "84289",
+          "84249",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "14171",
+          "line": null,
+          "walk_time_min": 8.7
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 65.8,
+      "walking_time_minutes": 14.4,
+      "transit_time_minutes": 46.0,
+      "waiting_time_minutes": 5.4,
+      "transfers": 2,
+      "walk_distance_meters": 925.14,
+      "transport_modes": [
+        "BUS",
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "14",
+        "10",
+        "EW"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "14169",
+        "14159",
+        "14139",
+        "14129",
+        "14119",
+        "14109",
+        "14089",
+        "14069",
+        "05641",
+        "03222",
+        "85099",
+        "84069",
+        "84289",
+        "84249",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "14169",
+        "line": null,
+        "walk_time_min": 14.4
+      }
+    }
+  },
+  {
+    "bto_name": "Bukit Merah",
+    "flat_type": "N/A",
+    "bto_location": {
+      "lat": 1.270142,
+      "lon": 103.807832
+    },
+    "destination": {
+      "lat": 1.33100823526591,
+      "lon": 103.938066838998,
+      "address": "116 BEDOK NORTH ROAD SINGAPORE 460116",
+      "postal_code": "460116"
+    },
+    "time_period": "Nighttime Off-Peak",
+    "available_routes": [
+      {
+        "route_number": 1,
+        "total_duration_minutes": 65.8,
+        "walking_time_minutes": 14.4,
+        "transit_time_minutes": 46.0,
+        "waiting_time_minutes": 5.4,
+        "transfers": 2,
+        "walk_distance_meters": 925.14,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "14",
+          "10",
+          "EW"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "14169",
+          "14159",
+          "14139",
+          "14129",
+          "14119",
+          "14109",
+          "14089",
+          "14069",
+          "05641",
+          "03222",
+          "85099",
+          "84069",
+          "84289",
+          "84249",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "14169",
+          "line": null,
+          "walk_time_min": 14.4
+        }
+      },
+      {
+        "route_number": 2,
+        "total_duration_minutes": 69.1,
+        "walking_time_minutes": 9.5,
+        "transit_time_minutes": 51.6,
+        "waiting_time_minutes": 8.1,
+        "transfers": 2,
+        "walk_distance_meters": 618.54,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "CC",
+          "222",
+          "EW"
+        ],
+        "first_transport_mode": "SUBWAY",
+        "stop_sequence": [
+          "Origin",
+          "84031",
+          "84041",
+          "84051",
+          "84289",
+          "84249",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": null
+      },
+      {
+        "route_number": 3,
+        "total_duration_minutes": 71.1,
+        "walking_time_minutes": 8.7,
+        "transit_time_minutes": 53.2,
+        "waiting_time_minutes": 9.2,
+        "transfers": 2,
+        "walk_distance_meters": 553.72,
+        "transport_modes": [
+          "BUS",
+          "SUBWAY"
+        ],
+        "route_numbers": [
+          "222",
+          "100",
+          "EW"
+        ],
+        "first_transport_mode": "BUS",
+        "stop_sequence": [
+          "Origin",
+          "14171",
+          "15041",
+          "15051",
+          "18011",
+          "11511",
+          "11021",
+          "11031",
+          "11041",
+          "11051",
+          "84031",
+          "84041",
+          "84051",
+          "84289",
+          "84249",
+          "Destination"
+        ],
+        "mrt_lines": [],
+        "starting_stop": {
+          "code": "14171",
+          "line": null,
+          "walk_time_min": 8.7
+        }
+      }
+    ],
+    "best_route": {
+      "route_number": 1,
+      "total_duration_minutes": 65.8,
+      "walking_time_minutes": 14.4,
+      "transit_time_minutes": 46.0,
+      "waiting_time_minutes": 5.4,
+      "transfers": 2,
+      "walk_distance_meters": 925.14,
+      "transport_modes": [
+        "BUS",
+        "SUBWAY"
+      ],
+      "route_numbers": [
+        "14",
+        "10",
+        "EW"
+      ],
+      "first_transport_mode": "BUS",
+      "stop_sequence": [
+        "Origin",
+        "14169",
+        "14159",
+        "14139",
+        "14129",
+        "14119",
+        "14109",
+        "14089",
+        "14069",
+        "05641",
+        "03222",
+        "85099",
+        "84069",
+        "84289",
+        "84249",
+        "Destination"
+      ],
+      "mrt_lines": [],
+      "starting_stop": {
+        "code": "14169",
+        "line": null,
+        "walk_time_min": 14.4
+      }
+    }
   }
 ]

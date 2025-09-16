@@ -5,8 +5,9 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import TransportResultView, { type TransportResult } from "@/components/TransportResultView";
+import TransportComparisonView, { type TransportComparisonResult } from "@/components/TransportComparisonView";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 type BTOListingAPI = {
@@ -43,6 +44,9 @@ export default function TransportCard({ btoProject }: Props) {
 
   const [singleData, setSingleData] = useState<TransportResult | null>(null);
   const [allData, setAllData] = useState<AllResponse | null>(null);
+  const [compareTargets, setCompareTargets] = useState<string[]>([]);
+  const [compareResult, setCompareResult] = useState<TransportComparisonResult | null>(null);
+  const [analyzedProjects, setAnalyzedProjects] = useState<string[]>([]);
 
   useEffect(() => {
     let alive = true;
@@ -88,6 +92,7 @@ export default function TransportCard({ btoProject }: Props) {
     setError(null);
     setSingleData(null);
     setAllData(null);
+    setCompareResult(null);
 
     try {
       if (isAll) {
@@ -114,9 +119,74 @@ export default function TransportCard({ btoProject }: Props) {
         if (!res.ok) throw new Error(`Request failed: ${res.status}`);
         const json = (await res.json()) as TransportResult;
         setSingleData(json);
+        // Record that this project has been analyzed successfully for this session
+        setAnalyzedProjects((prev) => (prev.includes(name) ? prev : [...prev, name]));
       }
     } catch (e: any) {
       setError(e?.message || "Unknown error");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function addCompareTarget() {
+    if (!name || name === ALL_VALUE) return;
+    if (!analyzedProjects.includes(name)) {
+      setError("Analyze this BTO first using Query before adding to comparison.");
+      return;
+    }
+    setCompareTargets((prev) => (prev.includes(name) ? prev : [...prev, name]));
+  }
+
+  function removeCompareTarget(target: string) {
+    setCompareTargets((prev) => prev.filter((t) => t !== target));
+  }
+
+  async function clearComparison() {
+    try {
+      setIsLoading(true);
+      setError(null);
+      await fetch(`http://127.0.0.1:8000/compare_btos/clear`, { method: "DELETE" });
+      setCompareResult(null);
+    } catch (e: any) {
+      setError(e?.message || "Failed to clear comparison data");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  async function runComparison() {
+    if (postal.trim().length === 0 || period.trim().length === 0) return;
+    // Must have analyzed at least 2 different BTOs in single mode
+    const uniqueTargets = Array.from(new Set(compareTargets));
+    if (uniqueTargets.length < 2) {
+      setError("Add at least 2 analyzed BTOs to compare.");
+      return;
+    }
+    // Ensure all selected compare targets were previously analyzed
+    const missing = uniqueTargets.filter((t) => !analyzedProjects.includes(t));
+    if (missing.length > 0) {
+      setError(`Analyze first: ${missing.join(", ")}`);
+      return;
+    }
+    setIsLoading(true);
+    setError(null);
+    setSingleData(null);
+    setAllData(null);
+    setCompareResult(null);
+
+    try {
+      // Then call compare endpoint; backend reads saved comparison set
+      const cmpParams = new URLSearchParams({
+        destination_address: postal.trim(),
+        time_period: period.trim(),
+      });
+      const cmpRes = await fetch(`http://127.0.0.1:8000/compare_btos?${cmpParams.toString()}`, { method: "POST" });
+      if (!cmpRes.ok) throw new Error(`Compare failed (${cmpRes.status})`);
+      const cmpJson = (await cmpRes.json()) as TransportComparisonResult;
+      setCompareResult(cmpJson);
+    } catch (e: any) {
+      setError(e?.message || "Comparison failed");
     } finally {
       setIsLoading(false);
     }
@@ -187,7 +257,10 @@ export default function TransportCard({ btoProject }: Props) {
             </Select>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex flex-wrap gap-2 justify-end">
+            <Button onClick={addCompareTarget} variant="outline" disabled={!name || name === ALL_VALUE || isLoading || !analyzedProjects.includes(name)}>
+              Add to Compare
+            </Button>
             <Button onClick={onQuery} disabled={!canQuery || isLoading}>
               {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isLoading ? "Running Transportation Agent" : "Query"}
@@ -212,6 +285,30 @@ export default function TransportCard({ btoProject }: Props) {
         )}
 
         {/* Results */}
+        {/* Compare selection chips */}
+        {compareTargets.length > 0 && (
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Selected for comparison</div>
+            <div className="flex flex-wrap gap-2">
+              {compareTargets.map((t) => (
+                <div key={t} className="flex items-center gap-2 bg-gray-100 rounded-full px-3 py-1 text-sm">
+                  <span className="font-medium">{t}</span>
+                  <button className="text-gray-500 hover:text-gray-700" onClick={() => removeCompareTarget(t)} aria-label={`Remove ${t}`}>
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button onClick={runComparison} disabled={isLoading || compareTargets.length === 0 || !postal || !period}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Compare Selected
+              </Button>
+              <Button onClick={clearComparison} variant="ghost" disabled={isLoading}>Clear Comparison</Button>
+            </div>
+          </div>
+        )}
+
         {!isLoading && !error && singleData && (
           <>
             <div className="text-base font-semibold">{name}</div>
@@ -234,6 +331,13 @@ export default function TransportCard({ btoProject }: Props) {
               </AccordionItem>
             ))}
           </Accordion>
+        )}
+
+        {!isLoading && !error && compareResult && (
+          <div className="border-t pt-4">
+            <div className="text-base font-semibold mb-2">Transport Comparison</div>
+            <TransportComparisonView data={compareResult} />
+          </div>
         )}
       </CardContent>
     </Card>

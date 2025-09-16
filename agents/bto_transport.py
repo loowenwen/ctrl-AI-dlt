@@ -559,7 +559,6 @@ Focus ONLY on transport factors. Use actual data from the transport information 
             try:
                 result = json.loads(raw_response)
             except json.JSONDecodeError:
-                # If Claude didn't return valid JSON, keep raw text
                 result = {"raw_text": raw_response}
 
             return {"result": result}

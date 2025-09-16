@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,15 +15,64 @@ interface BudgetResponse {
 
 interface BudgetCardProps {
   onBudgetCalculated?: (budget: BudgetResponse) => void;
+  autoRun?: {
+    monthlyIncome: number;
+    cpfSavings: number;
+    cashSavings: number;
+  };
 }
 
-export default function BudgetCard({ onBudgetCalculated }: BudgetCardProps) {
+export default function BudgetCard({ onBudgetCalculated, autoRun }: BudgetCardProps) {
   const [monthlyIncome, setMonthlyIncome] = useState("");
   const [cpfSavings, setCpfSavings] = useState("");
   const [cashSavings, setCashSavings] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [budget, setBudget] = useState<BudgetResponse | null>(null);
+  const [hasAutoRun, setHasAutoRun] = useState(false);
+
+  // Auto-run budget calculation if autoRun parameters are provided
+  useEffect(() => {
+    if (autoRun && autoRun.monthlyIncome && autoRun.cpfSavings && autoRun.cashSavings && !budget && !isLoading && !hasAutoRun) {
+      setHasAutoRun(true);
+      setMonthlyIncome(autoRun.monthlyIncome.toString());
+      setCpfSavings(autoRun.cpfSavings.toString());
+      setCashSavings(autoRun.cashSavings.toString());
+      
+      // Auto-run the calculation after a short delay to ensure state is set
+      setTimeout(() => {
+        runAutoCalculation();
+      }, 100);
+    }
+  }, [autoRun, hasAutoRun]);
+
+  async function runAutoCalculation() {
+    if (!autoRun) return;
+    
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      const res = await fetch("http://127.0.0.1:8000/budget", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          household_income: autoRun.monthlyIncome,
+          cpf_savings: autoRun.cpfSavings,
+          cash_savings: autoRun.cashSavings,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+      const data = await res.json();
+      setBudget(data);
+      onBudgetCalculated?.(data);
+    } catch (e: any) {
+      setError(e?.message || "Failed to calculate budget automatically");
+    } finally {
+      setIsLoading(false);
+    }
+  }
 
   async function calculateBudget() {
     if (!monthlyIncome || !cpfSavings || !cashSavings) return;
@@ -108,6 +157,10 @@ export default function BudgetCard({ onBudgetCalculated }: BudgetCardProps) {
 
         {budget && (
           <div className="space-y-2 pt-2 border-t">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+              <span className="text-sm font-medium text-green-700">Budget calculated successfully</span>
+            </div>
             <p className="text-sm">
               Maximum HDB Loan: <span className="font-medium">${budget.max_hdb_loan.toLocaleString()}</span>
             </p>

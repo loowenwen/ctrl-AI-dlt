@@ -40,26 +40,28 @@ interface AffordabilityResult {
 
 interface AffordabilityCardProps {
   totalBudget?: number;
+  selectedFlatType?: string; // Filter BTOs by this flat type when doing comprehensive analysis
   defaultBTO?: {
     name: string;
     flatType?: string;
   };
 }
 
-export default function AffordabilityCard({ totalBudget, defaultBTO }: AffordabilityCardProps) {
+export default function AffordabilityCard({ totalBudget, selectedFlatType, defaultBTO }: AffordabilityCardProps) {
   const [availableProjects, setAvailableProjects] = useState<BTOProject[]>([]);
   const [selectedProject, setSelectedProject] = useState<string>("");
-  const [selectedFlatType, setSelectedFlatType] = useState<string>("");
+  const [currentFlatType, setCurrentFlatType] = useState<string>("");
   const [selectedBTOs, setSelectedBTOs] = useState<SelectedBTO[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<AffordabilityResult[] | null>(null);
+  const [hasAutoRun, setHasAutoRun] = useState(false);
 
   // Load available BTOs
   useEffect(() => {
     async function loadBTOData() {
       try {
-        const response = await fetch('/api/bto-data');
+        const response = await fetch('http://127.0.0.1:8000/bto-data');
         const data: BTOProject[] = await response.json();
         setAvailableProjects(data);
         
@@ -70,6 +72,35 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
             project: defaultBTO.name,
             flatType: defaultBTO.flatType,
           }]);
+        } else {
+          // If no default BTO, add ALL available BTOs for comprehensive comparison
+          const allBTOs: SelectedBTO[] = [];
+          data.forEach(project => {
+            const town = project.properties.description[0].town;
+            const flatTypesString = project.properties.description[0].flatType;
+            // Parse flat types (e.g., "2-room, 3-room, 4-room" -> ["2-room", "3-room", "4-room"])
+            const flatTypes = flatTypesString.split(", ").map(type => type.replace(" Flexi", ""));
+            
+            // Filter by selected flat type if provided, otherwise include all flat types
+            const targetFlatTypes = selectedFlatType 
+              ? flatTypes.filter(type => type === selectedFlatType)
+              : flatTypes;
+            
+            // Add each matching flat type as a separate BTO option
+            targetFlatTypes.forEach(flatType => {
+              allBTOs.push({
+                project: town,
+                flatType: flatType,
+              });
+            });
+          });
+          
+          console.log('AffordabilityCard: Auto-adding BTOs for comparison:', {
+            selectedFlatType,
+            totalBTOs: allBTOs.length,
+            filteredBy: selectedFlatType ? `${selectedFlatType} only` : 'all flat types'
+          });
+          setSelectedBTOs(allBTOs);
         }
       } catch (error) {
         console.error('Failed to load BTO data:', error);
@@ -81,8 +112,35 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
 
   // Reset flat type when project changes
   useEffect(() => {
-    setSelectedFlatType("");
+    setCurrentFlatType("");
   }, [selectedProject]);
+
+  // Clear results when total budget changes and reset auto-run flag
+  useEffect(() => {
+    setResults(null);
+    setError(null);
+    setHasAutoRun(false); // Reset auto-run flag when budget changes
+  }, [totalBudget]);
+
+  // Auto-run affordability check when budget becomes available and default BTO is provided
+  useEffect(() => {
+    console.log('AffordabilityCard defaultBTO effect:', {
+      totalBudget,
+      defaultBTO,
+      selectedBTOsLength: selectedBTOs.length
+    });
+    
+    if (totalBudget && defaultBTO && defaultBTO.flatType && selectedBTOs.length === 0) {
+      console.log('AffordabilityCard - Auto-adding default BTO:', defaultBTO);
+      // Auto-add the default BTO to the list
+      setSelectedBTOs([{
+        project: defaultBTO.name,
+        flatType: defaultBTO.flatType,
+      }]);
+    }
+  }, [totalBudget, defaultBTO]);
+
+
 
   // Get available flat types for selected project
   const getAvailableFlatTypes = useCallback((projectName: string) => {
@@ -97,19 +155,19 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
 
   // Add BTO
   const addBTO = useCallback(async () => {
-    if (!selectedProject || !selectedFlatType) return;
+    if (!selectedProject || !currentFlatType) return;
 
     // Do not fetch price here; defer to affordability check
     setSelectedBTOs(current => [...current, {
       project: selectedProject,
-      flatType: selectedFlatType,
+      flatType: currentFlatType,
     }]);
 
     // Reset selections
     setSelectedProject("");
-    setSelectedFlatType("");
+    setCurrentFlatType("");
     setError(null);
-  }, [selectedProject, selectedFlatType]);
+  }, [selectedProject, currentFlatType]);
 
   // Remove BTO
   const removeBTO = useCallback((index: number) => {
@@ -119,7 +177,15 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
 
   // Check affordability
   const checkAffordability = useCallback(async () => {
-    if (!totalBudget || selectedBTOs.length === 0) return;
+    if (!totalBudget) {
+      setError("Please calculate your budget first before checking affordability.");
+      return;
+    }
+    
+    if (selectedBTOs.length === 0) {
+      setError("Please add at least one BTO project to check affordability.");
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
@@ -136,7 +202,7 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
         return acc;
       }, {} as Record<string, any>);
 
-      const estRes = await fetch('/api/cost_estimates', {
+      const estRes = await fetch('http://127.0.0.1:8000/cost_estimates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ selections }),
@@ -156,7 +222,7 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
       }
 
       // Then, run affordability against these estimates
-      const response = await fetch("/api/affordability", {
+      const response = await fetch("http://127.0.0.1:8000/affordability", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -178,12 +244,51 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
     }
   }, [totalBudget, selectedBTOs]);
 
+  // Auto-run affordability check when we have budget and BTOs 
+  useEffect(() => {
+    console.log('🔍 AffordabilityCard auto-run check:', {
+      totalBudget,
+      selectedBTOsLength: selectedBTOs.length,
+      hasResults: !!results,
+      isLoading,
+      hasError: !!error,
+      hasAutoRun
+    });
+    
+    // Simple condition: if we have budget and BTOs, and haven't run yet, run it
+    if (totalBudget && totalBudget > 0 && selectedBTOs.length > 0 && !hasAutoRun && !isLoading) {
+      console.log('🚀 AffordabilityCard: AUTO-TRIGGERING affordability check...');
+      setHasAutoRun(true);
+      
+      // Run immediately 
+      setTimeout(() => {
+        checkAffordability();
+      }, 100);
+    }
+  }, [totalBudget, selectedBTOs, hasAutoRun, isLoading, checkAffordability]);
+
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Affordability Check</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Affordability Check
+          {!defaultBTO && (
+            <span className="text-sm bg-blue-100 text-blue-700 px-2 py-1 rounded">
+              All BTOs
+            </span>
+          )}
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Info banner for comprehensive analysis */}
+        {!defaultBTO && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <p className="text-sm text-blue-700">
+              <strong>Comprehensive Analysis:</strong> Analyzing affordability for all available BTO projects and selected flat type to give you the complete picture.
+            </p>
+          </div>
+        )}
+        
         {/* Project Selection */}
         <div className="grid gap-4">
           {/* BTO Project Selection */}
@@ -210,7 +315,7 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
           {selectedProject && (
             <div className="grid gap-2">
               <Label htmlFor="flat-type">Flat Type</Label>
-              <Select value={selectedFlatType} onValueChange={setSelectedFlatType}>
+              <Select value={currentFlatType} onValueChange={setCurrentFlatType}>
                 <SelectTrigger id="flat-type" className="bg-white">
                   <SelectValue placeholder="Choose flat type" />
                 </SelectTrigger>
@@ -228,7 +333,7 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
           {/* Add BTO Button */}
           <Button 
             onClick={addBTO}
-            disabled={!selectedProject || !selectedFlatType}
+            disabled={!selectedProject || !currentFlatType}
             variant="outline"
           >
             Add BTO to Compare
@@ -269,10 +374,18 @@ export default function AffordabilityCard({ totalBudget, defaultBTO }: Affordabi
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Running Affordability Agent
                 </>
+              ) : !totalBudget ? (
+                'Calculate Budget First'
               ) : (
                 'Check Affordability'
               )}
             </Button>
+            
+            {!totalBudget && (
+              <p className="text-sm text-gray-500 text-center">
+                Complete the budget calculation before checking affordability
+              </p>
+            )}
           </div>
         )}
 

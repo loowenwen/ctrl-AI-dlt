@@ -24,13 +24,17 @@ type BTOListingAPI = {
 
 type Props = {
   btoProject?: string;
+  autoRun?: {
+    destinationPostal: string;
+    timePeriod: string;
+  };
 };
 
 const ALL_VALUE = "__ALL__";
 
 type AllResponse = Record<string, TransportResult>;
 
-export default function TransportCard({ btoProject }: Props) {
+export default function TransportCard({ btoProject, autoRun }: Props) {
   const [projects, setProjects] = useState<string[]>([]);
   const [projectsLoading, setProjectsLoading] = useState<boolean>(false);
   const [projectsError, setProjectsError] = useState<string | null>(null);
@@ -47,6 +51,7 @@ export default function TransportCard({ btoProject }: Props) {
   const [compareTargets, setCompareTargets] = useState<string[]>([]);
   const [compareResult, setCompareResult] = useState<TransportComparisonResult | null>(null);
   const [analyzedProjects, setAnalyzedProjects] = useState<string[]>([]);
+  const [hasAutoRun, setHasAutoRun] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -78,6 +83,47 @@ export default function TransportCard({ btoProject }: Props) {
     })();
     return () => { alive = false; };
   }, [btoProject]);
+
+  // Reset hasAutoRun when autoRun props change
+  useEffect(() => {
+    setHasAutoRun(false);
+  }, [autoRun]);
+
+  // Auto-run transport analysis if autoRun parameters are provided
+  useEffect(() => {
+    console.log('🔍 TransportCard auto-run check:', {
+      autoRun: !!autoRun,
+      btoProject,
+      destinationPostal: autoRun?.destinationPostal,
+      timePeriod: autoRun?.timePeriod,
+      hasAutoRun,
+      isLoading,
+      hasResults: !!singleData
+    });
+    
+    // Auto-run when we have autoRun params (regardless of specific BTO or all BTOs)
+    if (autoRun && autoRun.destinationPostal && autoRun.timePeriod && !hasAutoRun && !isLoading) {
+      console.log('🚀 TransportCard: AUTO-TRIGGERING transport analysis...');
+      setHasAutoRun(true);
+      setPostal(autoRun.destinationPostal);
+      setPeriod(autoRun.timePeriod);
+      
+      // If specific BTO provided, use it; otherwise analyze ALL BTOs
+      if (btoProject) {
+        console.log('🏠 TransportCard: Analyzing specific BTO:', btoProject);
+        setName(btoProject);
+      } else {
+        console.log('🏢 TransportCard: Auto-selecting ALL BTOs for comprehensive analysis');
+        setName(ALL_VALUE); // Auto-select "All BTOs"
+      }
+      
+      // Run analysis after form is populated
+      setTimeout(() => {
+        console.log('🎯 TransportCard: Auto-executing onQuery...');
+        onQuery();
+      }, 500); // Longer delay to ensure state updates
+    }
+  }, [autoRun, btoProject, hasAutoRun, isLoading]);
 
   const isAll = name === ALL_VALUE;
 

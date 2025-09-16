@@ -13,9 +13,11 @@ function safeJsonParse<T = any>(v: unknown): T | null {
 
 type Props = {
   initialText?: string | null;
+  isAllBTOAnalysis?: boolean; // Whether user is analyzing all BTOs vs specific BTO
+  selectedFlatType?: string; // Flat type for context
 };
 
-export default function SentimentReport({ initialText }: Props) {
+export default function SentimentReport({ initialText, isAllBTOAnalysis, selectedFlatType }: Props) {
   const [apiRaw, setApiRaw] = useState<ApiEnvelope | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -31,11 +33,18 @@ export default function SentimentReport({ initialText }: Props) {
         setApiError(null);
         setApiRaw(null);
 
+        // Enhance the prompt for comprehensive BTO analysis
+        const enhancedText = isAllBTOAnalysis 
+          ? `${initialText}
+
+CONTEXT: Looking at all BTO launches in October 2025 Singapore${selectedFlatType ? ` for ${selectedFlatType} flats` : ''}.`
+          : initialText;
+
         const res = await fetch(
           "https://ituhr6ycktc3r2yvoiiq3igs3q0ebbts.lambda-url.us-east-1.on.aws/",
           {
             method: "POST",
-            body: JSON.stringify({ text: initialText }),
+            body: JSON.stringify({ text: enhancedText }),
             signal: abort.signal,
           }
         );
@@ -50,7 +59,7 @@ export default function SentimentReport({ initialText }: Props) {
     })();
 
     return () => abort.abort();
-  }, [initialText]);
+  }, [initialText, isAllBTOAnalysis, selectedFlatType]);
 
   const parsed = useMemo(() => {
     if (!apiRaw) return null;

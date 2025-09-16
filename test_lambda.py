@@ -50,3 +50,6 @@ def test_local_lambda(text: str):
 if __name__ == "__main__":
     test_text = "Tell me about the Toa Payoh BTO launch sentiment"
     test_local_lambda(test_text)
+
+
+

@@ -13,7 +13,7 @@ from agents.bto_cost_estimator_agent import (
 )
 from agents.bto_affordability_agent import assess_estimates_with_budget
 from agents.bto_launch_websearch_agent import run as launch_websearch
-from agents.bto_transport import analyze_bto_transport, compare_bto_transports, get_bto_locations, clear_comparison_data, analyze_all_bto_transports
+from agents.bto_transport import analyze_bto_transport, compare_bto_transports, get_bto_locations, clear_comparison_data, analyze_all_bto_transports, get_comparison_history
 
 
 
@@ -552,10 +552,10 @@ def analyze_all(postal_code: str, time_period: str):
 
 # --- Compare multiple BTOs ---
 @app.post("/compare_btos")
-def compare_btos(destination_address: str, time_period: str):
+def compare_btos(destination_address: str, time_period: str, names: Optional[List[str]] = None):
     """Compare transport accessibility across multiple BTO projects."""
     try:
-        result = compare_bto_transports(destination_address, time_period)
+        result = compare_bto_transports(destination_address, time_period, names)
         return result
     except ValueError as e:
         # Known/expected error (invalid time_period, no data, etc.)
@@ -578,3 +578,13 @@ def clear_comparisons():
     """Clear stored BTO comparison data."""
     clear_comparison_data()
     return {"status": "comparison data cleared"}
+
+
+# --- Comparison history ---
+@app.get("/compare_btos/history")
+def comparison_history():
+    """List analyzed BTOs available for comparison along with basic metadata."""
+    try:
+        return {"history": get_comparison_history()}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

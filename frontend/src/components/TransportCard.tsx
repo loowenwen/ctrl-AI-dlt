@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -20,6 +20,13 @@ type BTOListingAPI = {
   listingType?: string;
   stage?: string;
   ballotQtr?: string;
+};
+
+type HistoryItem = {
+  bto_name: string;
+  count?: number;
+  last_time_period?: string | null;
+  last_destination?: string | null;
 };
 
 type Props = {
@@ -52,6 +59,27 @@ export default function TransportCard({ btoProject, autoRun }: Props) {
   const [compareResult, setCompareResult] = useState<TransportComparisonResult | null>(null);
   const [analyzedProjects, setAnalyzedProjects] = useState<string[]>([]);
   const [hasAutoRun, setHasAutoRun] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+
+  const loadHistory = useCallback(async () => {
+    try {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      const res = await fetch(`http://127.0.0.1:8000/compare_btos/history`);
+      if (!res.ok) throw new Error(`Failed to load history (${res.status})`);
+      const json = await res.json();
+      const items = Array.isArray(json?.history) ? (json.history as HistoryItem[]) : [];
+      // Sort alphabetically for consistency
+      items.sort((a, b) => a.bto_name.localeCompare(b.bto_name));
+      setHistory(items);
+    } catch (e: any) {
+      setHistoryError(e?.message || "Failed to load history");
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     let alive = true;
@@ -81,49 +109,10 @@ export default function TransportCard({ btoProject, autoRun }: Props) {
         if (alive) setProjectsLoading(false);
       }
     })();
+    // Load existing analyzed history on mount
+    loadHistory();
     return () => { alive = false; };
   }, [btoProject]);
-
-  // Reset hasAutoRun when autoRun props change
-  useEffect(() => {
-    setHasAutoRun(false);
-  }, [autoRun]);
-
-  // Auto-run transport analysis if autoRun parameters are provided
-  useEffect(() => {
-    console.log('🔍 TransportCard auto-run check:', {
-      autoRun: !!autoRun,
-      btoProject,
-      destinationPostal: autoRun?.destinationPostal,
-      timePeriod: autoRun?.timePeriod,
-      hasAutoRun,
-      isLoading,
-      hasResults: !!singleData
-    });
-    
-    // Auto-run when we have autoRun params (regardless of specific BTO or all BTOs)
-    if (autoRun && autoRun.destinationPostal && autoRun.timePeriod && !hasAutoRun && !isLoading) {
-      console.log('🚀 TransportCard: AUTO-TRIGGERING transport analysis...');
-      setHasAutoRun(true);
-      setPostal(autoRun.destinationPostal);
-      setPeriod(autoRun.timePeriod);
-      
-      // If specific BTO provided, use it; otherwise analyze ALL BTOs
-      if (btoProject) {
-        console.log('🏠 TransportCard: Analyzing specific BTO:', btoProject);
-        setName(btoProject);
-      } else {
-        console.log('🏢 TransportCard: Auto-selecting ALL BTOs for comprehensive analysis');
-        setName(ALL_VALUE); // Auto-select "All BTOs"
-      }
-      
-      // Run analysis after form is populated
-      setTimeout(() => {
-        console.log('🎯 TransportCard: Auto-executing onQuery...');
-        onQuery();
-      }, 500); // Longer delay to ensure state updates
-    }
-  }, [autoRun, btoProject, hasAutoRun, isLoading]);
 
   const isAll = name === ALL_VALUE;
 
@@ -132,7 +121,7 @@ export default function TransportCard({ btoProject, autoRun }: Props) {
     return (isAll || name.trim().length > 0) && postal.trim().length > 0 && period.trim().length > 0;
   }, [isAll, name, postal, period]);
 
-  async function onQuery() {
+  const onQuery = useCallback(async () => {
     if (!canQuery) return;
     setIsLoading(true);
     setError(null);
@@ -167,13 +156,56 @@ export default function TransportCard({ btoProject, autoRun }: Props) {
         setSingleData(json);
         // Record that this project has been analyzed successfully for this session
         setAnalyzedProjects((prev) => (prev.includes(name) ? prev : [...prev, name]));
+        // Refresh history panel to reflect newly analyzed project
+        loadHistory();
       }
     } catch (e: any) {
       setError(e?.message || "Unknown error");
     } finally {
       setIsLoading(false);
     }
-  }
+  }, [canQuery, isAll, postal, period, name, loadHistory]);
+
+  // Reset hasAutoRun when autoRun props change
+  useEffect(() => {
+    setHasAutoRun(false);
+  }, [autoRun]);
+
+  // Auto-run transport analysis if autoRun parameters are provided
+  useEffect(() => {
+    console.log('🔍 TransportCard auto-run check:', {
+      autoRun: !!autoRun,
+      btoProject,
+      destinationPostal: autoRun?.destinationPostal,
+      timePeriod: autoRun?.timePeriod,
+      hasAutoRun,
+      isLoading,
+      hasResults: !!singleData || !!allData
+    });
+    
+    // Auto-run when we have autoRun params (regardless of specific BTO or all BTOs)
+    if (autoRun && autoRun.destinationPostal && autoRun.timePeriod && !hasAutoRun && !isLoading) {
+      console.log('🚀 TransportCard: AUTO-TRIGGERING transport analysis...');
+      setHasAutoRun(true);
+      setPostal(autoRun.destinationPostal);
+      setPeriod(autoRun.timePeriod);
+      
+      // If specific BTO provided, use it; otherwise analyze ALL BTOs
+      if (btoProject) {
+        console.log('🏠 TransportCard: Analyzing specific BTO:', btoProject);
+        setName(btoProject);
+      } else {
+        console.log('🏢 TransportCard: Auto-selecting ALL BTOs for comprehensive analysis');
+        setName(ALL_VALUE); // Auto-select "All BTOs"
+      }
+      
+      // Run analysis after form is populated
+      setTimeout(() => {
+        console.log('🎯 TransportCard: Auto-executing onQuery...');
+        onQuery();
+      }, 1000); // Longer delay to ensure state updates
+    }
+  }, [autoRun, btoProject, hasAutoRun, isLoading, onQuery]);
 
   function addCompareTarget() {
     if (!name || name === ALL_VALUE) return;
@@ -194,6 +226,8 @@ export default function TransportCard({ btoProject, autoRun }: Props) {
       setError(null);
       await fetch(`http://127.0.0.1:8000/compare_btos/clear`, { method: "DELETE" });
       setCompareResult(null);
+      // Clearing comparison does not delete history from file, but reload anyway
+      loadHistory();
     } catch (e: any) {
       setError(e?.message || "Failed to clear comparison data");
     } finally {
@@ -223,10 +257,9 @@ export default function TransportCard({ btoProject, autoRun }: Props) {
 
     try {
       // Then call compare endpoint; backend reads saved comparison set
-      const cmpParams = new URLSearchParams({
-        destination_address: postal.trim(),
-        time_period: period.trim(),
-      });
+      const cmpParams = new URLSearchParams({ destination_address: postal.trim(), time_period: period.trim() });
+      // Append names[]= for each selected history item
+      uniqueTargets.forEach((n) => cmpParams.append("names", n));
       const cmpRes = await fetch(`http://127.0.0.1:8000/compare_btos?${cmpParams.toString()}`, { method: "POST" });
       if (!cmpRes.ok) throw new Error(`Compare failed (${cmpRes.status})`);
       const cmpJson = (await cmpRes.json()) as TransportComparisonResult;
@@ -331,6 +364,43 @@ export default function TransportCard({ btoProject, autoRun }: Props) {
         )}
 
         {/* Results */}
+
+        {/* History panel */}
+        <div className="space-y-2 border-t pt-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold">Analyzed history</div>
+            <Button variant="ghost" size="sm" onClick={loadHistory} disabled={historyLoading}>
+              {historyLoading ? "Refreshing…" : "Refresh"}
+            </Button>
+          </div>
+          {historyError && (
+            <div className="text-xs text-rose-600">{historyError}</div>
+          )}
+          {history.length === 0 && !historyLoading && (
+            <div className="text-sm text-muted-foreground">No analyzed BTOs yet. Run a single analysis to populate history.</div>
+          )}
+          {history.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {history.map((h) => {
+                const selected = compareTargets.includes(h.bto_name);
+                return (
+                  <button
+                    key={h.bto_name}
+                    onClick={() => {
+                      setCompareTargets((prev) =>
+                        selected ? prev.filter((x) => x !== h.bto_name) : [...prev, h.bto_name]
+                      );
+                    }}
+                    className={`px-3 py-1 rounded-full text-sm border ${selected ? "bg-blue-600 text-white border-blue-600" : "bg-gray-50 border-gray-200"}`}
+                    title={h.last_destination ? `Last to: ${h.last_destination} (${h.last_time_period || ""})` : ""}
+                  >
+                    {h.bto_name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
         {/* Compare selection chips */}
         {compareTargets.length > 0 && (
           <div className="space-y-2">

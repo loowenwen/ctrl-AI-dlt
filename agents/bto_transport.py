@@ -232,6 +232,23 @@ class BTOTransportService:
         except Exception as e:
             raise ValueError(f"Failed to load comparison data: {str(e)}")
 
+    def get_comparison_history(self) -> List[dict]:
+        """Return a deduplicated history of analyzed BTOs with simple stats."""
+        data = self.load_comparison_data()
+        history: dict[str, dict] = {}
+        for item in data:
+            name = item.get("bto_name") or item.get("name")
+            if not name:
+                continue
+            h = history.get(name) or {"bto_name": name, "count": 0, "last_time_period": None, "last_destination": None}
+            h["count"] = int(h["count"]) + 1
+            # Update last seen meta
+            h["last_time_period"] = item.get("time_period") or h.get("last_time_period")
+            dest = (item.get("destination") or {})
+            h["last_destination"] = dest.get("address") or dest.get("postal_code") or h.get("last_destination")
+            history[name] = h
+        return list(history.values())
+
 class BTOTransportAnalyzer:
 
     
@@ -388,7 +405,7 @@ Provide a relative ranking of the provided BTO locations based purely on public 
 
         return invoke
 
-    def analyze_single_bto(self, name: str, postal_code: str, time_period: str) -> Dict[str, str]:
+    def analyze_single_bto(self, name: str, postal_code: str, time_period: str, save_to_comparison: bool = True) -> Dict[str, str]:
         """Analyze transport accessibility for a single BTO by name."""
         if not (postal_code.isdigit() and len(postal_code) == 6):
             raise ValueError("Postal code must be a 6-digit number")
@@ -408,7 +425,8 @@ Provide a relative ranking of the provided BTO locations based purely on public 
             raise ValueError(transport_data["error"])
 
         formatted_data = self.service.format_route_data(transport_data, bto["name"], bto.get("flatType", "N/A"))
-        self.service.save_comparison_data(formatted_data)
+        if save_to_comparison:
+            self.service.save_comparison_data(formatted_data)
 
         destination_address = formatted_data["destination"].get("address", postal_code)
         analysis_prompt = f"""
@@ -471,8 +489,10 @@ Focus ONLY on transport factors. Use actual data from the transport information 
         except Exception as e:
             return {"error": f"AI analysis failed: {str(e)}"}
 
-    def compare_btos(self, destination_address: str, time_period: str) -> Dict[str, str]:
-        """Compare transport accessibility across multiple BTOs."""
+    def compare_btos(self, destination_address: str, time_period: str, filter_names: List[str] | None = None) -> Dict[str, str]:
+        """Compare transport accessibility across multiple BTOs.
+        If filter_names is provided, restrict to those BTO names present in the stored set.
+        """
         if time_period not in self.config.time_periods:
             raise ValueError(f"Invalid time period: {time_period}. Choose from {list(self.config.time_periods.keys())}")
 
@@ -480,6 +500,12 @@ Focus ONLY on transport factors. Use actual data from the transport information 
         all_transport_data = self.service.load_comparison_data()
         if not all_transport_data:
             raise ValueError("No transport data available for comparison")
+        if filter_names:
+            allowed = set(x.strip().lower() for x in filter_names if x and x.strip())
+            filtered = [x for x in all_transport_data if str(x.get("bto_name", "")).lower() in allowed]
+            if len(filtered) < 2:
+                raise ValueError("Select at least two analyzed BTOs to compare")
+            all_transport_data = filtered
         analysis_prompt = f"""
 You are a Singapore public transport specialist analyzing BTO locations for commuting accessibility.
 
@@ -583,19 +609,26 @@ def analyze_bto_transport(name: str, postal_code: str, time_period: str) -> Dict
     """Analyze transport for a single BTO location by name."""
     config = Config()
     analyzer = BTOTransportAnalyzer(config)
-    return analyzer.analyze_single_bto(name, postal_code, time_period)
+    return analyzer.analyze_single_bto(name, postal_code, time_period, save_to_comparison=True)
 
-def compare_bto_transports(destination_address: str, time_period: str) -> Dict[str, str]:
-    """Compare transport accessibility for multiple BTOs."""
+def compare_bto_transports(destination_address: str, time_period: str, names: List[str] | None = None) -> Dict[str, str]:
+    """Compare transport accessibility for multiple BTOs. Optionally filter by provided names."""
     config = Config()
     analyzer = BTOTransportAnalyzer(config)
-    return analyzer.compare_btos(destination_address, time_period)
+    return analyzer.compare_btos(destination_address, time_period, names)
 
 def clear_comparison_data() -> None:
     """Clear stored comparison data."""
     config = Config()
     analyzer = BTOTransportAnalyzer(config)
     analyzer.clear_comparison_data()
+
+
+def get_comparison_history() -> List[dict]:
+    """Expose comparison history for API."""
+    config = Config()
+    analyzer = BTOTransportAnalyzer(config)
+    return analyzer.service.get_comparison_history()
 
 
 def analyze_all_bto_transports(postal_code: str, time_period: str) -> Dict[str, str]:
@@ -613,7 +646,7 @@ def analyze_all_bto_transports(postal_code: str, time_period: str) -> Dict[str, 
 
         while retry < max_retries:
             try:
-                results[name] = analyzer.analyze_single_bto(name, postal_code, time_period)
+                results[name] = analyzer.analyze_single_bto(name, postal_code, time_period, save_to_comparison=False)
                 
                 # If successful, break out of retry loop
                 break

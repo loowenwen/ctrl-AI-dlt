@@ -2,7 +2,6 @@ boto3>=1.40.0
 botocore>=1.40.0
 python-dotenv>=1.0.0
 strands-agents>=1.7.0
-googlesearch-python
 yt-dlp
 playwright==1.54.0
 certifi

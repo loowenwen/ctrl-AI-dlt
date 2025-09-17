@@ -11,7 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import boto3
 from bs4 import BeautifulSoup
-from googlesearch import search as google_search  # pip: googlesearch-python
+import requests
 import logging
 from strands import Agent, tool
 from strands.handlers.callback_handler import PrintingCallbackHandler
@@ -29,6 +29,7 @@ logging.basicConfig(
 
 NOVA_PRO_MODEL_ID = os.environ.get("CLAUDE_35")
 WS_DEFAULT_REGION = "us-east-1"
+BRAVE_API_KEY = os.environ.get("BRAVE_SEARCH_API")
 
 
 logger.info("Bedrock region=%s model_id=%s", WS_DEFAULT_REGION, NOVA_PRO_MODEL_ID)
@@ -95,13 +96,93 @@ def get_page_content(url: str, timeout_s: int = 10) -> Optional[str]:
         return None
 
 
+# def search_google(query: str, max_results: int = 10, sleep_interval: float = 2.0) -> List[str]:
+#     """
+#     Use Google Custom Search API to get URLs.
+#     """
+#     if not GOOGLE_API_KEY:
+#         logger.warning("Google API key not found. Cannot perform search.")
+#         return []
+#     
+#     try:
+#         # Google Custom Search API endpoint
+#         url = "https://www.googleapis.com/customsearch/v1"
+#         
+#         params = {
+#             'key': GOOGLE_API_KEY,
+#             'cx': GOOGLE_CSE_ID,
+#             'q': query,
+#             'num': min(max_results, 10),  # API limit is 10 per request
+#         }
+#         
+#         response = requests.get(url, params=params, timeout=10)
+#         response.raise_for_status()
+#         
+#         data = response.json()
+#         
+#         if 'items' not in data:
+#             logger.warning("No search results found for query: %s", query)
+#             return []
+#         
+#         urls = []
+#         for item in data['items']:
+#             if 'link' in item:
+#                 urls.append(item['link'])
+#         
+#         return urls
+#         
+#     except requests.RequestException as e:
+#         logger.error("Google Custom Search API request failed: %s", e)
+#         return []
+#     except Exception as e:
+#         logger.error("Unexpected error in Google search: %s", e)
+#         return []
+
+
 def search_google(query: str, max_results: int = 10, sleep_interval: float = 2.0) -> List[str]:
     """
-    Use python googlesearch to get URLs.
+    Use Brave Search API to get URLs.
     """
+    if not BRAVE_API_KEY:
+        logger.warning("Brave API key not found. Cannot perform search.")
+        return []
+    
     try:
-        return list(google_search(query, num_results=max_results, sleep_interval=sleep_interval))
-    except Exception:
+        # Brave Search API endpoint
+        url = "https://api.search.brave.com/res/v1/web/search"
+        
+        headers = {
+            'Accept': 'application/json',
+            'Accept-Encoding': 'gzip',
+            'X-Subscription-Token': BRAVE_API_KEY
+        }
+        
+        params = {
+            'q': query,
+            'count': min(max_results, 20),  # Brave allows up to 20 results per request
+        }
+        
+        response = requests.get(url, params=params, headers=headers, timeout=10)
+        response.raise_for_status()
+        
+        data = response.json()
+        
+        if 'web' not in data or 'results' not in data['web']:
+            logger.warning("No search results found for query: %s", query)
+            return []
+        
+        urls = []
+        for item in data['web']['results']:
+            if 'url' in item:
+                urls.append(item['url'])
+        
+        return urls
+        
+    except requests.RequestException as e:
+        logger.error("Brave Search API request failed: %s", e)
+        return []
+    except Exception as e:
+        logger.error("Unexpected error in Brave search: %s", e)
         return []
 
 
